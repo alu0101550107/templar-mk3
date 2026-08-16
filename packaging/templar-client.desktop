@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Templar
+Comment=Cliente de chat P2P cifrado extremo a extremo
+Exec=/home/yusuf/.my_shit/.myCodes/Mis_cosas/cliente_servidor/templar/mk3/build/client/templar_client
+Icon=/home/yusuf/.my_shit/.myCodes/Mis_cosas/cliente_servidor/templar/mk3/client/resources/great_helmet_logo.png
+Terminal=false
+Categories=Network;Chat;InstantMessaging;
+StartupWMClass=templar-client

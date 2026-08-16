@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono adaptativo (Android 8+, el unico soportado aqui, minSdk ya es 28):
+     Android recorta esto en circulo, cuadrado redondeado, etc segun el
+     launcher del fabricante, asi que el contenido real (great_helmet_logo.png,
+     ver ic_launcher_foreground.png) va encogido con margen de sobra dentro
+     del lienzo para que no se corte pase lo que pase. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+</adaptive-icon>

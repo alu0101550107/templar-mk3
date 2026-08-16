@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mismo negro que theme.background por defecto (ver Theme::defaults()
+         en client/src/Theme.cpp): capa de fondo del icono adaptativo. -->
+    <color name="ic_launcher_background">#0a0a0a</color>
+</resources>

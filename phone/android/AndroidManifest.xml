@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<!--
+Copia propia (no la que genera Qt por defecto) para poder fijar el nombre
+de paquete y la etiqueta de la app de verdad. El resto (activity/provider
+de QtActivity/FileProvider) es boilerplate obligatorio de la integracion de
+Qt con Android: no tocar sin comprobar contra una version nueva de Qt.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.templar.phone"
+    android:installLocation="auto"
+    android:versionCode="1"
+    android:versionName="0.1">
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- Obligatorio desde Android 13 (API 33) para poder mostrar
+         cualquier notificacion: sin esto NotificationManagerCompat.notify
+         no hace nada (ver NotificationHelper.java). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Para poder arrancar/mantener ConnectionService (ver
+         phone/android/src/com/templar/phone/ConnectionService.java), el
+         foreground service que evita que Android corte la conexion al
+         minimizar la app. FOREGROUND_SERVICE_REMOTE_MESSAGING es
+         obligatorio ademas del generico desde Android 14 (API 34) para
+         ese tipo concreto de servicio. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
+    <supports-screens
+        android:anyDensity="true"
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:smallScreens="true" />
+    <application
+        android:name="org.qtproject.qt.android.bindings.QtApplication"
+        android:hardwareAccelerated="true"
+        android:label="Templar"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="false"
+        android:allowBackup="true"
+        android:fullBackupOnly="false">
+        <!-- com.templar.phone.TemplarActivity (no org.qtproject.qt.android.bindings.QtActivity
+             directo): una subclase minima propia (ver
+             phone/android/src/com/templar/phone/TemplarActivity.java) que
+             solo anade onActivityResult, necesaria para poder lanzar la
+             camara del sistema (ver CameraHelper.java) y recibir su
+             resultado. Todo lo demas es identico al QtActivity de base. -->
+        <activity
+            android:name="com.templar.phone.TemplarActivity"
+            android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
+            android:label="Templar"
+            android:launchMode="singleTop"
+            android:screenOrientation="unspecified"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+          <meta-data
+                android:name="android.app.lib_name"
+                android:value="templar_phone" />
+
+          <meta-data
+                android:name="android.app.arguments"
+                android:value="" />
+        </activity>
+
+        <service
+            android:name="com.templar.phone.ConnectionService"
+            android:foregroundServiceType="remoteMessaging"
+            android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.qtprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/qtprovider_paths"/>
+        </provider>
+    </application>
+</manifest>

@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/">
+    <file>great_helmet_logo.png</file>
+  </qresource>
+</RCC>

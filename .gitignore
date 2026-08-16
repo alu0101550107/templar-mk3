@@ -1,0 +1,14 @@
+# Directorios de build de CMake (out-of-source siempre)
+build/
+build-*/
+
+# Generado por deploy_server.sh -- tiene rutas absolutas propias de cada maquina
+templar-server.service.example
+
+# Logs sueltos
+*.log
+
+# IDE
+.vscode/
+.idea/
+compile_commands.json
