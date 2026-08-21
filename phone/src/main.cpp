@@ -4,6 +4,7 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 
+#include "BiometricBridge.hpp"
 #include "ClientController.hpp"
 #include "ThemeController.hpp"
 #include "templar/crypto/Identity.hpp"
@@ -25,10 +26,12 @@ int main(int argc, char* argv[]) {
 
   templar::phone::ClientController controller;
   templar::phone::ThemeController theme;
+  templar::phone::BiometricBridge biometric;
 
   QQmlApplicationEngine engine;
   engine.rootContext()->setContextProperty("controller", &controller);
   engine.rootContext()->setContextProperty("theme", &theme);
+  engine.rootContext()->setContextProperty("biometric", &biometric);
 
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreationFailed, &app,

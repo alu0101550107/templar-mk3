@@ -18,6 +18,11 @@ Page {
     title: "Templar"
     background: null  // TemplarBackground de abajo ya cubre toda la pagina
 
+    // controller.errorText es de solo lectura (ver ClientController.hpp) --
+    // los errores de la huella (que no pasan por ClientController en
+    // absoluto) necesitan su propio sitio donde guardarse.
+    property string biometricError: ""
+
     // Navega en cuanto un login termina bien -- separado de "loggedIn" (que
     // tambien se pondria a true al restaurar sesion en un futuro arranque
     // automatico) para no disparar una navegacion no deseada en ese caso.
@@ -25,6 +30,22 @@ Page {
         target: controller
         function onLoginSucceeded() {
             page.StackView.view.push("ChatListPage.qml")
+        }
+    }
+
+    // La huella nunca guarda el usuario (nunca fue secreto, ya vive en
+    // rememberedUsername()) -- solo la contraseña, cifrada con la clave del
+    // Keystore. Al confirmar la huella, se llama a controller.login() con
+    // ambos exactamente igual que si se hubieran escrito a mano.
+    Connections {
+        target: biometric
+        function onUnlockFinished(success, password, errorMessage) {
+            if (success) {
+                page.biometricError = ""
+                controller.login(controller.rememberedUsername(), password)
+            } else if (errorMessage !== "Cancelado") {
+                page.biometricError = errorMessage
+            }
         }
     }
 
@@ -115,10 +136,20 @@ Page {
             }
         }
 
+        // Oculto si no hay huella activada -- requiere estar conectado
+        // igual que "Iniciar sesion", mismo motivo.
+        TemplarButton {
+            text: "Usar huella"
+            visible: biometric.available && biometric.enabled
+            enabled: controller.connected
+            Layout.fillWidth: true
+            onClicked: biometric.unlock()
+        }
+
         // Mismo criterio que loginErrorLabel_ en el cliente de escritorio:
         // oculta mientras no haya error, texto en rojo cuando lo hay.
         Label {
-            text: controller.errorText
+            text: controller.errorText.length > 0 ? controller.errorText : page.biometricError
             visible: text.length > 0
             wrapMode: Text.WordWrap
             color: "#ff6b6b"

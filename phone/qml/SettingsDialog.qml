@@ -77,6 +77,71 @@ Dialog {
         }
     }
 
+    // Pide la contraseña antes de activar la huella: BiometricBridge.enable()
+    // necesita cifrarla con la clave del Keystore (ver BiometricHelper.java).
+    // El usuario no hace falta pedirlo aqui -- se recuerda ya en claro via
+    // controller.rememberedUsername().
+    Dialog {
+        id: biometricPasswordDialog
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(parent ? parent.width - 40 : 300, 300)
+
+        background: Rectangle {
+            color: theme.background
+            border.color: theme.accent
+            border.width: 1
+            radius: 4
+        }
+
+        header: Label {
+            text: "Confirma tu contraseña"
+            color: theme.accent
+            font.bold: true
+            font.family: "JetBrains Mono"
+            wrapMode: Text.WordWrap
+            padding: 12
+        }
+
+        contentItem: TemplarTextField {
+            id: biometricPasswordField
+            placeholderText: "Contraseña"
+            echoMode: TextInput.Password
+        }
+
+        footer: RowLayout {
+            width: biometricPasswordDialog.width
+            spacing: 8
+
+            TemplarButton {
+                text: "Cancelar"
+                Layout.fillWidth: true
+                Layout.margins: 8
+                onClicked: biometricPasswordDialog.reject()
+            }
+            TemplarButton {
+                text: "Confirmar"
+                Layout.fillWidth: true
+                Layout.margins: 8
+                onClicked: biometricPasswordDialog.accept()
+            }
+        }
+
+        onAccepted: {
+            biometric.enable(biometricPasswordField.text)
+            biometricPasswordField.text = ""
+        }
+        onRejected: biometricPasswordField.text = ""
+        onOpened: biometricPasswordField.forceActiveFocus()
+    }
+
+    Connections {
+        target: biometric
+        function onEnableFinished(success, errorMessage) {
+            if (!success) biometricErrorLabel.text = errorMessage
+        }
+    }
+
     // Un unico TemplarColorPicker compartido por las seis filas --
     // pickerTarget dice a cual de los draftXxx de arriba escribir cuando se
     // acepte (el propio picker no sabe nada de "campos", solo entrega un
@@ -196,6 +261,47 @@ Dialog {
                 dialog.draftPeerMessage = theme.defaultPeerMessage
                 dialog.draftSystemMessage = theme.defaultSystemMessage
             }
+        }
+
+        // Oculto por completo si no hay hardware/huellas registradas (o en
+        // escritorio, donde biometric.available siempre es false -- ver
+        // BiometricBridge.cpp).
+        RowLayout {
+            visible: biometric.available
+            Layout.fillWidth: true
+            Layout.topMargin: 8
+
+            Label {
+                text: "Inicio de sesión con huella"
+                color: theme.foreground
+                Layout.fillWidth: true
+            }
+
+            Switch {
+                id: biometricSwitch
+                checked: biometric.enabled
+                onClicked: {
+                    // El clic ya cambio "checked" localmente y rompio el
+                    // binding -- se restaura de inmediato para que el
+                    // interruptor siempre refleje biometric.enabled de
+                    // verdad, y la accion de activar/desactivar depende
+                    // del estado anterior, no del visual a medio cambiar.
+                    var wasEnabled = biometric.enabled
+                    checked = Qt.binding(function() {
+                        return biometric.enabled
+                    })
+                    if (wasEnabled) biometric.disable()
+                    else biometricPasswordDialog.open()
+                }
+            }
+        }
+
+        Label {
+            id: biometricErrorLabel
+            visible: text.length > 0
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+            color: "#ff6b6b"
         }
     }
 }

@@ -28,6 +28,7 @@ endif()
 qt6_add_executable(templar_phone
   src/main.cpp
   src/ClientController.cpp
+  src/BiometricBridge.cpp
   src/ThemeController.cpp
   src/ConversationListModel.cpp
   src/ChatHistoryModel.cpp

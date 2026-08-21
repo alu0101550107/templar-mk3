@@ -25,6 +25,9 @@ Qt con Android: no tocar sin comprobar contra una version nueva de Qt.
          ese tipo concreto de servicio. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
+    <!-- Para BiometricHelper.java (desbloqueo con huella): normal, no
+         peligroso, no requiere pedirlo en tiempo de ejecucion. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
