@@ -54,6 +54,25 @@ ApplicationWindow {
     visible: true
     title: "Templar"
 
+    // Boton/gesto "atras" de Android: sin esto, Qt trata el evento como un
+    // cierre de ventana normal y la app entera se sale en vez de navegar.
+    // Los Dialog/Popup (SettingsDialog, NewChatDialog, ...) no necesitan
+    // nada aparte -- QtQuick Controls ya los cierra solo con el boton atras
+    // (closePolicy: Popup.CloseOnEscape se dispara tambien con Key_Back).
+    // Solo interceptamos por debajo de ChatListPage (stackView.depth > 2,
+    // es decir "estoy dentro de un chat"): ahi hacemos pop() a la lista en
+    // vez de salir. En ChatListPage (depth 2) o LoginPage (depth 1) se deja
+    // el comportamiento por defecto -- salir de la app, igual que cualquier
+    // pantalla "raiz" en Android -- para no reaparecer en el login estando
+    // aun conectados. Solo aplica en movil: en escritorio la X de la
+    // ventana debe cerrar sin mas, pase lo que pase en el stack.
+    onClosing: (close) => {
+        if (isMobilePlatform && stackView.depth > 2) {
+            close.accepted = false
+            stackView.pop()
+        }
+    }
+
     // Contenedor de navegacion: cada "pantalla principal" (login, lista de
     // chats, chat en concreto) es una Page que se push()/pop() aqui encima,
     // en vez de una ventana nueva -- en movil solo hay UNA ventana. Las
