@@ -62,4 +62,13 @@ void ChatHistoryModel::append(const ChatLine& line) {
   endInsertRows();
 }
 
+QVariantList ChatHistoryModel::findMatches(const QString& query) const {
+  QVariantList result;
+  if (query.isEmpty()) return result;
+  for (int i = 0; i < static_cast<int>(lines_.size()); ++i) {
+    if (lines_[static_cast<size_t>(i)].text.contains(query, Qt::CaseInsensitive)) result.append(i);
+  }
+  return result;
+}
+
 }  // namespace templar::phone

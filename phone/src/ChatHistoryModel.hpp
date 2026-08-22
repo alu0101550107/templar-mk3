@@ -2,6 +2,7 @@
 
 #include <QAbstractListModel>
 #include <QString>
+#include <QVariantList>
 #include <vector>
 
 namespace templar::phone {
@@ -63,6 +64,16 @@ class ChatHistoryModel : public QAbstractListModel {
   // mensaje mientras esa conversacion ya esta siendo la activa, para que
   // el ListView se actualice en caliente sin recargar todo el modelo.
   void append(const ChatLine& line);
+
+  // Indices (0-based, en el orden actual del modelo) de las lineas cuyo
+  // texto contiene `query`, insensible a mayusculas/minusculas -- sobre el
+  // texto PLANO de cada linea, igual que QTextEdit::find() en el
+  // escritorio busca sobre toPlainText() y no sobre el HTML ya escapado
+  // que arma ChatPage.qml. Lo usa la barra de busqueda de ChatPage.qml
+  // para saltar entre coincidencias sin tener que iterar el modelo linea
+  // a linea desde QML (QAbstractListModel no da acceso conveniente a
+  // datos por fila fuera de un delegate).
+  Q_INVOKABLE QVariantList findMatches(const QString& query) const;
 
  private:
   std::vector<ChatLine> lines_;

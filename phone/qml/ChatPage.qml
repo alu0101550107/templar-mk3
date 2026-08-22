@@ -25,6 +25,60 @@ Page {
     // ListView/delegate de por medio.
     property bool peerOnline: false
 
+    // --- Busqueda dentro de esta conversacion -- equivalente movil de
+    // searchToggleButton_/searchBarWidget_ en el escritorio (ver
+    // MainWindow::onSearchTextChanged/onSearchNextClicked/onSearchPrevClicked).
+    // Adaptada a que aqui el historial es una lista de mensajes discretos
+    // (ListView + ChatHistoryModel), no un unico texto continuo como el
+    // QTextEdit del escritorio: cada "coincidencia" es un MENSAJE entero
+    // que contiene la busqueda (ChatHistoryModel::findMatches), no una
+    // posicion de caracter suelta -- navegar entre coincidencias
+    // desplaza/centra la lista sobre ese mensaje en vez de mover un cursor
+    // de texto.
+    property bool searchBarVisible: false
+    property var searchMatches: []
+    property int searchMatchPos: -1
+
+    function toggleSearchBar() {
+        if (page.searchBarVisible) {
+            closeSearchBar()
+        } else {
+            page.searchBarVisible = true
+            searchField.forceActiveFocus()
+            searchField.selectAll()
+        }
+    }
+
+    function closeSearchBar() {
+        page.searchBarVisible = false
+        searchField.clear()
+        page.searchMatches = []
+        page.searchMatchPos = -1
+    }
+
+    // Cada tecleo relanza la busqueda desde el principio -- mismo criterio
+    // que onSearchTextChanged en el escritorio (siempre salta a la primera
+    // coincidencia del texto que se acaba de escribir).
+    function runSearch(query) {
+        page.searchMatches = query.length > 0 ? controller.history.findMatches(query) : []
+        page.searchMatchPos = page.searchMatches.length > 0 ? 0 : -1
+        if (page.searchMatchPos >= 0) {
+            historyView.positionViewAtIndex(page.searchMatches[page.searchMatchPos], ListView.Center)
+        }
+    }
+
+    function searchNext() {
+        if (page.searchMatches.length === 0) return
+        page.searchMatchPos = (page.searchMatchPos + 1) % page.searchMatches.length
+        historyView.positionViewAtIndex(page.searchMatches[page.searchMatchPos], ListView.Center)
+    }
+
+    function searchPrev() {
+        if (page.searchMatches.length === 0) return
+        page.searchMatchPos = (page.searchMatchPos - 1 + page.searchMatches.length) % page.searchMatches.length
+        historyView.positionViewAtIndex(page.searchMatches[page.searchMatchPos], ListView.Center)
+    }
+
     function refreshAdminStatus() {
         isGroupAdmin = page.isGroup && controller.groupAdmin(page.peerKey) === controller.username
     }
@@ -147,6 +201,14 @@ Page {
                 visible: !page.isGroup
             }
 
+            TemplarButton {
+                text: "🔎"
+                font.pixelSize: 16
+                implicitWidth: 36
+                flat: true
+                onClicked: page.toggleSearchBar()
+            }
+
             // +/- solo visibles para el admin de un grupo -- si no son
             // visibles, este hueco vacio conserva el mismo ancho que el
             // boton de atras para que el titulo se mantenga centrado en el
@@ -206,6 +268,45 @@ Page {
         anchors.fill: parent
         anchors.margins: 12
         spacing: 8
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            visible: page.searchBarVisible
+
+            TemplarTextField {
+                id: searchField
+                Layout.fillWidth: true
+                placeholderText: "Buscar en esta conversacion..."
+                onTextChanged: page.runSearch(text)
+                onAccepted: page.searchNext()
+            }
+            Label {
+                text: page.searchMatches.length > 0
+                    ? (page.searchMatchPos + 1) + "/" + page.searchMatches.length
+                    : (searchField.text.length > 0 ? "sin resultados" : "")
+                color: theme.systemMessage
+                font.pixelSize: 11
+            }
+            TemplarButton {
+                text: "↑"
+                implicitWidth: 32
+                flat: true
+                onClicked: page.searchPrev()
+            }
+            TemplarButton {
+                text: "↓"
+                implicitWidth: 32
+                flat: true
+                onClicked: page.searchNext()
+            }
+            TemplarButton {
+                text: "✕"
+                implicitWidth: 32
+                flat: true
+                onClicked: page.closeSearchBar()
+            }
+        }
 
         ListView {
             id: historyView
@@ -305,6 +406,26 @@ Page {
                         .replace(/</g, "&lt;")
                         .replace(/>/g, "&gt;")
                         .replace(/\n/g, "<br>")
+
+                    // Resalta la busqueda en el mensaje que la barra de
+                    // busqueda tiene enfocado ahora mismo -- equivalente
+                    // movil del resaltado de seleccion que QTextEdit::find()
+                    // pinta solo -- en el escritorio (ver el comentario de
+                    // searchMatches mas arriba: aqui la "coincidencia" es
+                    // el mensaje entero, esto solo marca el texto dentro).
+                    // Sobre `body` ya escapado (busca despues de escapar),
+                    // asi que una busqueda que contenga literalmente "<",
+                    // ">" o "&" puede no pintarse aunque el mensaje siga
+                    // localizandose bien (eso lo resuelve ChatHistoryModel::
+                    // findMatches sobre el texto plano).
+                    if (!model.rawHtml && page.searchMatchPos >= 0 &&
+                            page.searchMatches[page.searchMatchPos] === index &&
+                            searchField.text.length > 0) {
+                        var escapedQuery = searchField.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                        body = body.replace(new RegExp(escapedQuery, "gi"),
+                            function(m) { return "<span style='background-color:" + theme.accent +
+                                "; color:" + theme.background + ";'>" + m + "</span>" })
+                    }
 
                     var leftCell, rightCell
                     if (model.kind === 0) {
