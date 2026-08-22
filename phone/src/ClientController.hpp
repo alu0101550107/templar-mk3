@@ -424,7 +424,44 @@ class ClientController : public QObject {
   // Firma JNI exacta que espera CameraHelper.java para su metodo
   // "native static void nativeOnPhotoCaptured(String, boolean)".
   static void onPhotoCapturedJni(JNIEnv* env, jclass clazz, jstring path, jboolean success);
+
+  // Pide a MediaStoreHelper.java (openImageOutputFd/openDownloadOutputFd)
+  // un descriptor de fichero nativo hacia una entrada nueva de MediaStore
+  // -- Galeria si isImage, la coleccion de Descargas si no -- para que
+  // startBlobDownload pueda envolverlo en un QFile y escribir ahi
+  // directamente en vez de en el directorio privado de la app. Devuelve -1
+  // si MediaStore no aplica (Android < 10) o si algo fallo; el llamador
+  // cae de vuelta al fichero privado de siempre en ese caso. Llamada
+  // sincrona (a diferencia de capturePhoto/CameraHelper) porque abrir el
+  // descriptor no implica lanzar ninguna Activity ajena.
+  int openMediaStoreFd(bool isImage, const QString& displayName);
+
+  // Cierra el ciclo "IS_PENDING" que MediaStore exige para escrituras por
+  // streaming (ver el comentario de MediaStoreHelper.java): keep=true
+  // aclara la marca para que la fila se vuelva visible en Galeria/
+  // Descargas; keep=false borra la fila entera. Solo tiene efecto si la
+  // ultima llamada a openMediaStoreFd de verdad devolvio un descriptor
+  // valido -- ver ActiveBlobDownload::usesMediaStore.
+  void finalizeMediaStoreWrite(bool keep);
+
+  // Pide a ContentUriHelper.java el nombre real (OpenableColumns.
+  // DISPLAY_NAME) de un content:// que viene del selector de archivos del
+  // sistema -- ver el comentario de resolveOriginalFilename, que es quien
+  // llama a esto.
+  QString queryContentDisplayName(const QUrl& fileUrl);
 #endif
+
+  // Nombre a mostrar/mandar para un archivo que el usuario acaba de
+  // elegir (sendFile/startSelfFileAttach). En Android, el selector de
+  // archivos del sistema entrega un content://, y QUrl::fileName() ahi
+  // solo devuelve el ID opaco del documento del proveedor (p.ej.
+  // "msf:1000000123"), nunca el nombre real ni su extension -- por eso una
+  // foto de la camara (que llega como file:// normal, via
+  // QUrl::fromLocalFile) siempre acertaba el nombre y un archivo elegido
+  // del selector no. queryContentDisplayName() consulta el nombre de
+  // verdad al proveedor; si eso falla (o fuera de Android/content://) cae
+  // a QUrl::fileName() como hasta ahora.
+  QString resolveOriginalFilename(const QUrl& fileUrl);
 
   templar::client::NetworkManager net_;
   templar::client::CryptoEngine crypto_;
@@ -532,6 +569,12 @@ class ClientController : public QObject {
     // secuencia -- si BlobEnd llega sin que esto se haya puesto a true, el
     // archivo se corto en transito.
     bool finalTagSeen = false;
+    // true si `file` envuelve un descriptor abierto via MediaStoreHelper
+    // (openMediaStoreFd) en vez de una ruta normal -- indica que hace
+    // falta llamar a finalizeMediaStoreWrite() al terminar/cancelar/fallar
+    // esta descarga para aclarar o borrar la fila pendiente de MediaStore.
+    // Siempre false fuera de Android.
+    bool usesMediaStore = false;
   };
   std::optional<ActiveBlobDownload> activeDownload_;
 

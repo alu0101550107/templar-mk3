@@ -58,6 +58,16 @@ QString uniqueDownloadPath(const QString& dir, const QString& filename) {
     if (!QFile::exists(altPath)) return altPath;
   }
 }
+
+// Decide si un archivo descargado va a la coleccion de imagenes de
+// MediaStore (Galeria) o a la de Descargas -- ver openMediaStoreFd. Basta
+// con la extension: no hace falta abrir el archivo ni fiarse de nada que
+// mande el otro lado mas alla de eso.
+bool isImageFilename(const QString& filename) {
+  const QString ext = QFileInfo(filename).suffix().toLower();
+  return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "gif" || ext == "webp" ||
+         ext == "bmp" || ext == "heic" || ext == "heif";
+}
 }  // namespace
 
 ClientController* ClientController::instance_ = nullptr;
@@ -191,6 +201,46 @@ void ClientController::onPhotoCaptureFinished(const QString& path, bool success)
   pendingPhotoPeerKey_.clear();
   if (!success || path.isEmpty() || peerKey.isEmpty()) return;
   sendFile(peerKey, QUrl::fromLocalFile(path));
+}
+
+#ifdef Q_OS_ANDROID
+int ClientController::openMediaStoreFd(bool isImage, const QString& displayName) {
+  QJniObject activity = QNativeInterface::QAndroidApplication::context();
+  if (!activity.isValid()) return -1;
+  QJniObject jName = QJniObject::fromString(displayName);
+  const char* method = isImage ? "openImageOutputFd" : "openDownloadOutputFd";
+  return QJniObject::callStaticMethod<jint>("com/templar/phone/MediaStoreHelper", method,
+                                            "(Landroid/content/Context;Ljava/lang/String;)I",
+                                            activity.object(), jName.object<jstring>());
+}
+
+void ClientController::finalizeMediaStoreWrite(bool keep) {
+  QJniObject activity = QNativeInterface::QAndroidApplication::context();
+  if (!activity.isValid()) return;
+  QJniObject::callStaticMethod<void>("com/templar/phone/MediaStoreHelper", "finishPending",
+                                     "(Landroid/content/Context;Z)V", activity.object(),
+                                     static_cast<jboolean>(keep));
+}
+
+QString ClientController::queryContentDisplayName(const QUrl& fileUrl) {
+  QJniObject activity = QNativeInterface::QAndroidApplication::context();
+  if (!activity.isValid()) return QString();
+  QJniObject jUri = QJniObject::fromString(fileUrl.toString());
+  QJniObject result = QJniObject::callStaticObjectMethod(
+      "com/templar/phone/ContentUriHelper", "queryDisplayName",
+      "(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;", activity.object(),
+      jUri.object<jstring>());
+  return result.isValid() ? result.toString() : QString();
+}
+#endif
+
+QString ClientController::resolveOriginalFilename(const QUrl& fileUrl) {
+  QString name;
+#ifdef Q_OS_ANDROID
+  if (fileUrl.scheme() == "content") name = queryContentDisplayName(fileUrl);
+#endif
+  if (name.isEmpty()) name = fileUrl.fileName();
+  return QFileInfo(name).fileName();
 }
 
 bool ClientController::shouldNotify(const QString& conversationKey) const {
@@ -718,7 +768,7 @@ void ClientController::sendFile(const QString& peerKey, const QUrl& fileUrl) {
   OutgoingTransfer transfer;
   transfer.peer = peer;
   transfer.isGroup = isGroup;
-  transfer.filename = QFileInfo(fileUrl.fileName()).fileName();
+  transfer.filename = resolveOriginalFilename(fileUrl);
   if (transfer.filename.isEmpty()) transfer.filename = "archivo_enviado";
   transfer.totalSize = static_cast<quint64>(size);
   transfer.file = std::move(file);
@@ -753,7 +803,7 @@ void ClientController::startSelfFileAttach(const QUrl& fileUrl) {
   QString destDir =
       QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/mis_archivos";
   QDir().mkpath(destDir);
-  QString filename = QFileInfo(fileUrl.fileName()).fileName();
+  QString filename = resolveOriginalFilename(fileUrl);
   if (filename.isEmpty()) filename = "archivo";
   QString destPath = uniqueDownloadPath(destDir, filename);
 
@@ -955,28 +1005,53 @@ void ClientController::startBlobDownload(const QString& blobIdQ) {
     }
   }
 
-  QString downloadsDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-  QDir().mkpath(downloadsDir);
   // .fileName() descarta cualquier componente de ruta (p.ej.
   // "../../etc/passwd") -- nunca hay que confiar en el nombre que manda el
   // otro lado como una ruta real.
   QString safeName = QFileInfo(pending.filename).fileName();
   if (safeName.isEmpty()) safeName = "archivo_recibido";
-  QString destPath = uniqueDownloadPath(downloadsDir, safeName);
 
-  auto file = std::make_unique<QFile>(destPath);
-  if (!file->open(QIODevice::WriteOnly)) {
-    setErrorText("No se pudo crear el archivo de destino para la descarga.");
-    return;
+  auto file = std::make_unique<QFile>();
+  bool usesMediaStore = false;
+  QString displayName = safeName;
+
+#ifdef Q_OS_ANDROID
+  {
+    int fd = openMediaStoreFd(isImageFilename(safeName), safeName);
+    if (fd >= 0) {
+      if (file->open(fd, QIODevice::WriteOnly, QFileDevice::AutoCloseHandle)) {
+        usesMediaStore = true;
+      } else {
+        // No deberia pasar en la practica (abrir un fd recien devuelto por
+        // el sistema), pero si pasa hay que borrar la fila "pendiente" que
+        // MediaStoreHelper ya inserto para no dejarla huerfana antes de
+        // caer al fichero privado de abajo.
+        finalizeMediaStoreWrite(/*keep=*/false);
+      }
+    }
+  }
+#endif
+
+  if (!usesMediaStore) {
+    QString downloadsDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    QDir().mkpath(downloadsDir);
+    QString destPath = uniqueDownloadPath(downloadsDir, safeName);
+    file->setFileName(destPath);
+    if (!file->open(QIODevice::WriteOnly)) {
+      setErrorText("No se pudo crear el archivo de destino para la descarga.");
+      return;
+    }
+    displayName = QFileInfo(destPath).fileName();
   }
 
   ActiveBlobDownload active;
   active.blobId = blobId;
   active.originKey = pending.originKey;
   active.sender = pending.sender;
-  active.filename = QFileInfo(destPath).fileName();
+  active.filename = displayName;
   active.totalSize = pending.fileSize;
   active.file = std::move(file);
+  active.usesMediaStore = usesMediaStore;
   active.decryptor = std::make_unique<templar::crypto::FileDecryptor>(pending.key, pending.header);
   activeDownload_ = std::move(active);
 
@@ -1005,6 +1080,12 @@ void ClientController::onBlobDataReceived(const std::string& blobId, const Bytes
   } catch (const std::exception& e) {
     logChat(d.originKey, /*Peer=*/2, QString::fromStdString(d.sender),
            QString("[ALERTA] Fallo descifrando '") + d.filename + "': " + e.what());
+#ifdef Q_OS_ANDROID
+    // Mismo criterio que el fichero privado de siempre: lo ya escrito se
+    // queda (solo se avisa), no se borra por un fallo de descifrado a
+    // medias -- aqui eso significa aclarar IS_PENDING, no borrar la fila.
+    if (d.usesMediaStore) finalizeMediaStoreWrite(/*keep=*/true);
+#endif
     activeDownload_.reset();
     setFileTransferStatus("");
   }
@@ -1018,11 +1099,21 @@ void ClientController::onBlobEndReceived(const std::string& blobId) {
   QString savedPath = d.file->fileName();
   d.file->close();
 
+#ifdef Q_OS_ANDROID
+  if (d.usesMediaStore) finalizeMediaStoreWrite(/*keep=*/true);
+#endif
+
   setFileTransferStatus("");
+
+  // Sin ruta local que mostrar cuando fue a MediaStore (vive detras de un
+  // content:// interno, no de una ruta de fichero) -- se describe el
+  // destino en palabras en su lugar.
+  QString location =
+      d.usesMediaStore ? (isImageFilename(d.filename) ? "Galeria" : "Descargas") : savedPath;
 
   if (d.finalTagSeen) {
     logChat(d.originKey, /*Peer=*/2, QString::fromStdString(d.sender),
-           "Archivo '" + d.filename + "' recibido y verificado -> " + savedPath);
+           "Archivo '" + d.filename + "' recibido y verificado -> " + location);
   } else {
     logChat(d.originKey, /*Peer=*/2, QString::fromStdString(d.sender),
            "[ALERTA] El archivo '" + d.filename +
@@ -1034,7 +1125,16 @@ void ClientController::onBlobNotFound(const std::string& blobId, const QString& 
   if (!activeDownload_ || activeDownload_->blobId != blobId) return;
   ActiveBlobDownload d = std::move(*activeDownload_);
   activeDownload_.reset();
+
+#ifdef Q_OS_ANDROID
+  if (d.usesMediaStore) {
+    finalizeMediaStoreWrite(/*keep=*/false);
+  } else {
+    d.file->remove();
+  }
+#else
   d.file->remove();
+#endif
 
   setFileTransferStatus("");
 
@@ -1045,6 +1145,11 @@ void ClientController::onBlobNotFound(const std::string& blobId, const QString& 
 void ClientController::cancelActiveTransfers() {
   fileSendTimer_->stop();
   outgoingTransfer_.reset();
+#ifdef Q_OS_ANDROID
+  // Mismo criterio de "se queda lo escrito hasta ahora" que el resto de
+  // finales no-exitosos con fichero privado (nunca se borro aqui tampoco).
+  if (activeDownload_ && activeDownload_->usesMediaStore) finalizeMediaStoreWrite(/*keep=*/true);
+#endif
   activeDownload_.reset();
   setFileTransferStatus("");
   setFileTransferProgress(0.0);
