@@ -5,9 +5,11 @@ central retransmite mensajes entre clientes pero nunca puede leerlos: todo el
 contenido (texto, archivos, metadatos de grupo) se cifra en el dispositivo de
 origen y solo se descifra en el de destino.
 
-Pensado para un grupo pequeño de confianza (amigos, familia) que se conecta
-sobre una red privada (p.ej. [Tailscale](https://tailscale.com/)), no para
-exponerse directamente a Internet.
+Pensado para un grupo pequeño de confianza (amigos, familia). Lo mas sencillo
+es correrlo sobre una red privada (p.ej. [Tailscale](https://tailscale.com/)),
+pero tambien se puede exponer directo a Internet con un dominio propio o DNS
+dinamico (ver `setup_letsencrypt.sh` y "Exposicion directa a Internet" mas
+abajo) -- no esta pensado como un servicio publico abierto a cualquiera.
 
 ## Caracteristicas
 
@@ -28,7 +30,10 @@ exponerse directamente a Internet.
   cifrado, a un almacen de blobs en el servidor (que nunca ve el contenido
   en claro), y solo un puntero pequeno con la clave de descifrado viaja por
   el canal cifrado de cada destinatario -- la descarga es siempre manual (un
-  clic/toque), nunca automatica. Los blobs caducan a los 30 dias.
+  clic/toque), nunca automatica. Los blobs caducan a los 30 dias. En
+  Android, una foto descargada se guarda en la Galeria y el resto de
+  archivos en Descargas (via MediaStore, Android 10+), visibles para
+  cualquier otra app -- no solo dentro de Templar.
 - **Chat contigo mismo** ("notas"), siempre la segunda conversacion de la
   lista (justo despues de "Sistema") -- es puramente local, no pasa por el
   servidor ni se cifra (no hay a quien ocultarselo), asi que funciona sin
@@ -43,11 +48,20 @@ exponerse directamente a Internet.
 - **Busqueda dentro de una conversacion** con navegacion entre coincidencias.
 - **Separadores de fecha** entre mensajes de dias distintos, calculados al
   renderizar el historial (no se guardan como lineas aparte).
-- **TLS con anclaje de certificado (TOFU)**: la conexion con el servidor
-  siempre va cifrada por transporte, ademas del cifrado extremo a extremo de
-  los mensajes. El cliente recuerda la huella del certificado la primera vez
-  que se conecta a un servidor y avisa si cambiase mas adelante sin motivo.
-- **Limite de intentos de login** por IP para frenar fuerza bruta.
+- **TLS**, siempre, ademas del cifrado extremo a extremo de los mensajes.
+  Por defecto con anclaje de certificado (TOFU): el cliente recuerda la
+  huella la primera vez que se conecta a un servidor y avisa si cambiase mas
+  adelante sin motivo -- igual que `known_hosts` de SSH. Si el servidor tiene
+  un dominio propio, `setup_letsencrypt.sh` lo cambia por un certificado real
+  de Let's Encrypt, que el cliente valida de la forma normal (CA publica) en
+  vez de solo por huella.
+- **Protecciones anti-abuso en el servidor**: limite de intentos de login y
+  de registros por IP, tope de conexiones concurrentes por IP, una conexion
+  que nunca completa el login se cierra sola a los 20s, cuota de
+  almacenamiento de archivos por usuario, y tope de mensajes/invitaciones
+  pendientes por destinatario -- pensado para poder exponer el servidor
+  directo a Internet sin depender solo de la red de transporte (VPN/LAN)
+  para la seguridad.
 
 ## Arquitectura
 
@@ -180,15 +194,21 @@ interferir con tu servidor real):
   identidad/sesiones (una identidad distinta por dispositivo, con
   reparto/fan-out por dispositivo ademas de por miembro de grupo).
 - **Sin editar ni borrar mensajes ya enviados.**
-- El servidor requiere ejecutarse sobre una red en la que confíes en los
-  pares (Tailscale, VPN, LAN) -- no está pensado para exponerlo directamente
-  a Internet sin protecciones adicionales. `setup_letsencrypt.sh` resuelve
-  la parte de transporte (sustituye el certificado autofirmado/TOFU por uno
-  real de Let's Encrypt, para un despliegue con dominio propio o DNS
-  dinámico tipo DuckDNS), pero el registro de cuentas sigue sin límite de
-  tasa ni invitación, y no hay tope de conexiones concurrentes por IP ni
-  cuota de almacenamiento de archivos por usuario -- nada de eso está
-  pensado todavía para un servidor abierto al público en general.
+- **Registro sigue siendo abierto** (con límite de tasa por IP, pero sin
+  invitación ni aprobación) -- suficiente para un grupo pequeño no publicado
+  en ningún sitio, pero no es control de acceso real. Tampoco hay ninguna
+  herramienta de administración (banear/borrar una cuenta ya creada).
+
+## Exposición directa a Internet
+
+El servidor puede correr sin una VPN/LAN de por medio -- ver
+[`setup_letsencrypt.sh`](setup_letsencrypt.sh) para provisionar un
+certificado TLS real (Let's Encrypt) sobre un dominio propio o DNS dinámico
+(DuckDNS, etc.), y las protecciones anti-abuso listadas en
+"Características" (límites de login/registro por IP, tope de conexiones,
+cuotas de almacenamiento). Ver [docs/03-servidor.md](docs/03-servidor.md#límites-anti-abuso)
+para el detalle de cada mecanismo. Sigue sin ser un servicio pensado para
+uso público general (ver limitación de arriba sobre el registro abierto).
 
 ## Estructura del repositorio
 
@@ -207,5 +227,6 @@ phone/android/                 Manifest, iconos, clases Java propias (notificaci
 docs/                          Explicacion a fondo del protocolo, cripto, grupos, etc.
 setup.sh                       Instalador del cliente de escritorio (Arch/Debian)
 deploy_server.sh               Instalador de solo servidor, sin Qt6
+setup_letsencrypt.sh           Certificado TLS real (Let's Encrypt) para exposicion a Internet
 build_mobile.sh                Compila el cliente movil y genera el APK de Android
 ```

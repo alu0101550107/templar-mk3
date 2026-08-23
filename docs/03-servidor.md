@@ -161,17 +161,69 @@ El patron que se repite en casi todos los `handleX`: validar, tocar la
 resultado con `session->deliver(...)`; si no, ya quedo guardado en la DB
 para su proximo login.
 
-### El limite de intentos de login
+## Límites anti-abuso
 
-`handleLogin` primero comprueba `isLoginLocked(ip)` antes incluso de tocar
-la base de datos. `LoginAttempts` (`Router.hpp`) es un mapa en memoria,
+Todos en memoria (se olvidan si el servidor se reinicia, a proposito -- el
+objetivo es frenar abuso activo, no mantener una lista negra permanente), y
+pensados especificamente para poder exponer el servidor directo a Internet
+(ver [README.md](../README.md#exposición-directa-a-internet)) sin depender
+solo de estar detras de una VPN/LAN de confianza.
+
+### Login y registro
+
+`handleLogin` comprueba `isLoginLocked(ip)` antes incluso de tocar la base
+de datos. `LoginAttempts` (`Router.hpp`) es un mapa en memoria,
 `ip -> {contador de fallos, cuando empezo la ventana, hasta cuando esta
 bloqueado}`, protegido por su propio mutex. Se limita por **IP** y no por
 username: si se limitara por username, probar muchos usuarios distintos
 desde la misma maquina se saltaria el limite. Al quinto fallo en 5 minutos,
-esa IP queda bloqueada 30 segundos. Es deliberadamente simple (en memoria,
-se olvida si el servidor se reinicia) porque el objetivo es frenar fuerza
-bruta activa, no mantener una lista negra permanente.
+esa IP queda bloqueada 30 segundos.
+
+`handleRegister` usa un mecanismo hermano pero mas simple: como una cuenta
+legitima solo se registra una vez, no hace falta distinguir exito de fallo
+como en el login -- basta con contar CUALQUIER intento (`registerAttemptsByIp_`)
+en una ventana deslizante de 60 minutos, sin timer de bloqueo aparte. Al
+quinto intento desde la misma IP en esa hora, el sexto se rechaza.
+
+### Conexiones concurrentes y timeout pre-autenticacion
+
+`Router::tryRegisterConnection(ip)`/`unregisterConnection(ip)` llevan la
+cuenta de cuantas conexiones tiene abiertas cada IP a la vez
+(`connectionsByIp_`, tope 20) -- `listener()` (`main.cpp`) lo comprueba
+justo despues del `accept()`, ANTES del handshake TLS, para rechazar lo
+mas barato posible. `Router::onDisconnect` decrementa el contador siempre,
+sea cual sea el motivo de la desconexion.
+
+Aparte, cada `Session` tiene su propio `preAuthTimer_`
+(`Session.hpp`/`.cpp`): si una conexion completa el handshake TLS pero
+nunca manda `Login`/`Register`, se cierra sola a los 20 segundos. Esto NO
+es un timeout de inactividad general -- una sesion YA logueada puede estar
+horas en silencio de forma legitima (solo recibiendo mensajes push), asi
+que el timer se cancela para siempre en cuanto `setUsername()` confirma un
+login/registro exitoso. Sin este mecanismo, alguien podria abrir conexiones
+sin fin sin autenticarse nunca, cada una ocupando un socket/`Session`
+indefinidamente.
+
+### Cuotas de almacenamiento
+
+- **Blobs de archivo**: ademas del limite por blob (`kMaxBlobBytes`, 200 MB),
+  `BlobStore::beginUpload` suma el tamaño REAL en disco (no la columna
+  `size` de la BD, que es solo el tamaño declarado y por tanto falseable) de
+  todos los blobs de un usuario, y rechaza si superaria su cuota total
+  (`kMaxBlobBytesPerUser`, 2 GB) -- incluye subidas a medio terminar, que ya
+  ocupan disco de verdad.
+- **Buzon e invitaciones pendientes**: `Database::enqueueMessage`/
+  `enqueueGroupInvite` comprueban cuantas filas ya tiene pendientes ese
+  destinatario antes de insertar una mas (`kMaxPendingMailboxPerRecipient`
+  300, `kMaxPendingInvitesPerRecipient` 50) -- sin esto, una cuenta legitima
+  (o comprometida) podria llenar sin limite el buzon de otra persona.
+  `handleSendMsg`/`handleSendGroupMsg` tambien acotan el tamaño de un
+  mensaje individual (`kMaxChatMessageBytes`, 1 MB) para que ese tope de
+  filas siga significando algo en bytes totales.
+- **One-time prekeys**: `handlePublishOtpk` ya limitaba cada LLAMADA a
+  200 claves, pero nada impedia llamarlo en bucle sin fin -- `addOneTimePrekeys`
+  ahora tambien acota el total acumulado por usuario (`kMaxOneTimePrekeysPerUser`,
+  500), descartando en silencio lo que sobre.
 
 ## TLS: por que y como
 
@@ -229,3 +281,8 @@ CA reconocida pero tiene algun problema real (caducado, dominio que no
 coincide, revocado...) ya no se ignora, se corta la conexion como haria
 cualquier cliente HTTPS normal. El TOFU de `checkAndRememberCertificate`
 sigue corriendo en ambos casos, como capa extra.
+
+El `sslContext` en si (`main.cpp`) tambien fija una version minima --
+`no_sslv2`/`no_sslv3`/`no_tlsv1`/`no_tlsv1_1` via `set_options()`, dejando
+solo TLS 1.2/1.3 -- en vez de depender de que la politica de OpenSSL del
+sistema operativo excluya por su cuenta los protocolos viejos/rotos.
