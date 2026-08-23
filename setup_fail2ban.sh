@@ -60,8 +60,12 @@ if ! command -v fail2ban-client >/dev/null 2>&1; then
   fi
 fi
 
-echo "==> Escribiendo el filtro (que cuenta como intento malo)..."
+echo "==> Escribiendo los filtros (que cuenta como intento malo)..."
 mkdir -p /etc/fail2ban/filter.d
+
+# Fuerza bruta de login / abuso del rate-limit de registro -- umbral
+# generoso (10 en 10 min), pensado para no banear nunca a alguien que
+# solo se equivoca de contrasena.
 cat > /etc/fail2ban/filter.d/templar.conf <<'EOF'
 # Generado por setup_fail2ban.sh -- formato de log estable, ver
 # server/src/Router.cpp (handleLogin/handleRegister).
@@ -71,7 +75,18 @@ failregex = ^.*\[Servidor\] Login fallido desde <HOST>\s*$
 ignoreregex =
 EOF
 
-echo "==> Escribiendo la celda (umbral, ventana, duracion del baneo)..."
+# Flood/escaneo de conexiones -- esta linea SOLO aparece si una IP ya
+# supero el tope de 20 conexiones concurrentes (Router::kMaxConnectionsPerIp),
+# algo que ningun cliente legitimo hace nunca -- por eso el umbral es tan
+# bajo (2 en vez de 10): si aparece, ya es senal suficiente por si sola.
+cat > /etc/fail2ban/filter.d/templar-flood.conf <<'EOF'
+# Generado por setup_fail2ban.sh -- ver main.cpp (listener()).
+[Definition]
+failregex = ^.*\[Servidor\] Demasiadas conexiones concurrentes desde <HOST>, rechazada\.\s*$
+ignoreregex =
+EOF
+
+echo "==> Escribiendo las celdas (umbral, ventana, duracion del baneo)..."
 mkdir -p /etc/fail2ban/jail.d
 cat > /etc/fail2ban/jail.d/templar.conf <<EOF
 # Generado por setup_fail2ban.sh
@@ -85,11 +100,24 @@ findtime     = 10m
 bantime      = 1h
 banaction    = $BANACTION
 action       = %(action_)s
+
+[templar-flood]
+enabled      = true
+backend      = systemd
+journalmatch = _SYSTEMD_UNIT=templar-server.service
+filter       = templar-flood
+maxretry     = 2
+findtime     = 5m
+bantime      = 6h
+banaction    = $BANACTION
+action       = %(action_)s
 EOF
 
-echo "==> Validando que el filtro reconoce el formato de log real..."
+echo "==> Validando que los filtros reconocen el formato de log real..."
 if command -v fail2ban-regex >/dev/null 2>&1; then
   fail2ban-regex systemd-journal /etc/fail2ban/filter.d/templar.conf \
+    --journalmatch="_SYSTEMD_UNIT=templar-server.service" || true
+  fail2ban-regex systemd-journal /etc/fail2ban/filter.d/templar-flood.conf \
     --journalmatch="_SYSTEMD_UNIT=templar-server.service" || true
 fi
 
@@ -97,9 +125,19 @@ systemctl enable --now fail2ban
 systemctl restart fail2ban
 
 echo ""
-echo "Listo. Comprueba el estado con:"
+echo "Listo. Comprueba el estado de las dos celdas con:"
 echo "    sudo fail2ban-client status templar"
+echo "    sudo fail2ban-client status templar-flood"
 echo ""
 echo "Para desbanear una IP a mano si hace falta (p.ej. te bloqueaste tu mismo"
 echo "probando):"
 echo "    sudo fail2ban-client set templar unbanip <IP>"
+echo "    sudo fail2ban-client set templar-flood unbanip <IP>"
+echo ""
+echo "Nota: el puerto 80 no necesita ninguna celda -- no hay ningun servicio"
+echo "escuchando ahi de forma permanente (solo certbot un instante, cerca de"
+echo "cada renovacion), asi que no hay ningun log de 'intento malo' que vigilar."
+echo ""
+echo "Bonus: si tienes SSH expuesto tambien, fail2ban ya trae de fabrica un"
+echo "filtro para el (jail 'sshd') -- compueba si ya esta activo:"
+echo "    sudo fail2ban-client status sshd"
