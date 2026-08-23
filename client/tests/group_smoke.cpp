@@ -258,10 +258,11 @@ int main(int argc, char* argv[]) {
     auto* bobReconnectedList = find<QListWidget>(&bobReconnected, "conversationList");
     check(findConversationItem(bobReconnectedList, kGroupName) == nullptr,
          "el grupo abandonado no debe reaparecer con su nombre tras reconectar");
-    // Solo deben quedar "Sistema" y la conversacion 1-a-1 con alice -- ninguna
+    // Solo deben quedar "Sistema", "Tu" (chat contigo mismo, siempre
+    // presente tras el login) y la conversacion 1-a-1 con alice -- ninguna
     // entrada extra (el fantasma apareceria aqui con el id en crudo).
-    check(bobReconnectedList->count() == 2,
-         "tras reconectar, bob solo debe ver 'Sistema' y 'grp_alice' -- ninguna entrada "
+    check(bobReconnectedList->count() == 3,
+         "tras reconectar, bob solo debe ver 'Sistema', 'Tu' y 'grp_alice' -- ninguna entrada "
          "fantasma del grupo abandonado");
     std::cout << "[OK] Tras reconectar, el grupo abandonado no reaparece como chat fantasma.\n";
 

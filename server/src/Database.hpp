@@ -154,10 +154,27 @@ class Database {
   // periodico de limpieza (ver el temporizador en main.cpp).
   std::vector<std::string> listBlobsCreatedBefore(int64_t epochSeconds);
   void deleteBlobRecord(const std::string& blobId);
+  // Ids de TODOS los blobs de un dueno, completos o no -- usado por
+  // BlobStore::beginUpload para calcular su ocupacion real en disco antes
+  // de aplicar la cuota por usuario.
+  std::vector<std::string> listBlobIdsForOwner(const std::string& ownerUsername);
 
  private:
   void execOrThrow(const char* sql);
   void migrateMailboxSchema();
+
+  // Topes de filas pendientes por destinatario -- generosos para
+  // acumulacion offline real (alguien desconectado dias), acotados para
+  // que una cuenta (legitima o comprometida) no pueda llenar sin limite el
+  // buzon/las invitaciones de otra persona. Ver enqueueMessage/
+  // enqueueGroupInvite.
+  static constexpr int64_t kMaxPendingMailboxPerRecipient = 300;
+  static constexpr int64_t kMaxPendingInvitesPerRecipient = 50;
+  // Tope total (no por llamada -- eso ya lo limita handlePublishOtpk en
+  // Router) de one-time prekeys guardadas por usuario, para que nadie
+  // pueda llenar el almacenamiento del servidor llamando PublishOtpk en
+  // bucle sin fin. Ver addOneTimePrekeys.
+  static constexpr int64_t kMaxOneTimePrekeysPerUser = 500;
 
   sqlite3* db_ = nullptr;
   std::mutex mutex_;

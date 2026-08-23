@@ -29,6 +29,11 @@ constexpr uint64_t kMaxBlobBytes = 200ull * 1024 * 1024;
 // Cuanto se guarda un blob sin descargar antes de borrarlo solo (barrido
 // periodico, ver blobCleanupLoop).
 constexpr std::chrono::hours kBlobRetention{24 * 30};
+// Cuota TOTAL por usuario (sumando todos sus blobs, completos o a medio
+// subir) -- diez veces el limite de un blob individual, generoso para uso
+// normal de un grupo pequeno durante los 30 dias de retencion, acotado
+// para cualquier cuenta que abuse. Ver BlobStore::beginUpload.
+constexpr uint64_t kMaxBlobBytesPerUser = 2ull * 1024 * 1024 * 1024;
 
 // Directorio de datos estable e independiente del directorio de trabajo:
 // si se lanza el servidor desde un directorio de build que luego se borra
@@ -92,16 +97,25 @@ asio::awaitable<void> listener(tcp::acceptor acceptor, asio::io_context& ioConte
     co_await acceptor.async_accept(socket, asio::use_awaitable);
 
     auto endpoint = socket.remote_endpoint();
-    std::cout << "[Servidor] Nueva conexion desde " << endpoint.address().to_string() << ":"
-              << endpoint.port() << "\n";
+    std::string ip = endpoint.address().to_string();
+    std::cout << "[Servidor] Nueva conexion desde " << ip << ":" << endpoint.port() << "\n";
+
+    // Se rechaza ANTES del handshake TLS (mas barato) si esta IP ya tiene
+    // demasiadas conexiones abiertas a la vez -- ver Router::kMaxConnectionsPerIp.
+    if (!router.tryRegisterConnection(ip)) {
+      std::cerr << "[Servidor] Demasiadas conexiones concurrentes desde " << ip
+                << ", rechazada.\n";
+      continue;
+    }
 
     asio::ssl::stream<tcp::socket> sslSocket(std::move(socket), sslContext);
     boost::system::error_code handshakeEc;
     co_await sslSocket.async_handshake(asio::ssl::stream_base::server,
                                        asio::redirect_error(asio::use_awaitable, handshakeEc));
     if (handshakeEc) {
-      std::cerr << "[Servidor] Fallo el handshake TLS con " << endpoint.address().to_string()
-                << ": " << handshakeEc.message() << "\n";
+      std::cerr << "[Servidor] Fallo el handshake TLS con " << ip << ": " << handshakeEc.message()
+                << "\n";
+      router.unregisterConnection(ip);
       continue;
     }
 
@@ -138,8 +152,13 @@ int main(int argc, char* argv[]) {
   uint16_t port = 8080;
   std::filesystem::path dataDir = defaultDataDir();
   std::string dbPath = (dataDir / "templar.db").string();
+  // Por defecto escucha en todas las interfaces (0.0.0.0) -- el tercer
+  // argumento opcional deja restringirlo (p.ej. a 127.0.0.1 si va a correr
+  // detras de un reverse proxy propio en la misma maquina).
+  std::string bindAddress = "0.0.0.0";
   if (argc > 1) port = static_cast<uint16_t>(std::stoi(argv[1]));
   if (argc > 2) dbPath = argv[2];
+  if (argc > 3) bindAddress = argv[3];
 
   try {
     std::filesystem::path certPath = dataDir / "cert.pem";
@@ -148,24 +167,34 @@ int main(int argc, char* argv[]) {
     printCertificateFingerprint(certPath);
 
     asio::ssl::context sslContext(asio::ssl::context::tls_server);
+    // Fija TLS 1.2 como minimo (excluye SSLv2/SSLv3/TLS1.0/TLS1.1
+    // explicitamente, en vez de depender de que la politica del OpenSSL
+    // del sistema ya los excluya por su cuenta). Los clientes de este
+    // proyecto (Qt/OpenSSL, desktop y movil) negocian TLS 1.2/1.3 sin
+    // problema.
+    sslContext.set_options(asio::ssl::context::default_workarounds |
+                           asio::ssl::context::no_sslv2 | asio::ssl::context::no_sslv3 |
+                           asio::ssl::context::no_tlsv1 | asio::ssl::context::no_tlsv1_1);
     sslContext.use_certificate_chain_file(certPath.string());
     sslContext.use_private_key_file(keyPath.string(), asio::ssl::context::pem);
 
     Database db(dbPath);
     std::string blobsDir = (dataDir / "blobs").string();
-    BlobStore blobStore(db, blobsDir, kMaxBlobBytes, kBlobRetention);
+    BlobStore blobStore(db, blobsDir, kMaxBlobBytes, kMaxBlobBytesPerUser, kBlobRetention);
     Router router(db, blobStore);
 
     unsigned int numThreads = std::max(2u, std::thread::hardware_concurrency());
     asio::io_context ioContext(static_cast<int>(numThreads));
 
-    tcp::acceptor acceptor(ioContext, tcp::endpoint(tcp::v4(), port));
+    tcp::acceptor acceptor(ioContext,
+                           tcp::endpoint(asio::ip::make_address(bindAddress), port));
     asio::co_spawn(ioContext, listener(std::move(acceptor), ioContext, sslContext, router),
                    asio::detached);
     asio::co_spawn(ioContext, blobCleanupLoop(ioContext, blobStore), asio::detached);
 
-    std::cout << "[Servidor] Templar mk3 escuchando en el puerto " << port << " (" << numThreads
-              << " hilos, DB: " << dbPath << ", blobs: " << blobsDir << ", TLS activo)\n";
+    std::cout << "[Servidor] Templar mk3 escuchando en " << bindAddress << ":" << port << " ("
+              << numThreads << " hilos, DB: " << dbPath << ", blobs: " << blobsDir
+              << ", TLS activo)\n";
 
     std::vector<std::thread> pool;
     for (unsigned int i = 1; i < numThreads; ++i) {

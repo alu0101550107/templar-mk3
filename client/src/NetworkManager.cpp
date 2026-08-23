@@ -33,10 +33,16 @@ void NetworkManager::sendFrame(MsgType type, const Bytes& payload) {
 
 void NetworkManager::onSslErrors(const QList<QSslError>& errors) {
   Q_UNUSED(errors);
-  // Un certificado autofirmado SIEMPRE aparece como "no confiable" para el
-  // almacen de CAs de Qt -- eso es esperado, no hay CA publica para un
-  // servidor casero. La confianza real se decide aparte, por huella, en
-  // onEncrypted() (TOFU) -- aqui solo se deja continuar el handshake.
+  QSslCertificate cert = socket_.peerCertificate();
+  // Autofirmado (sin ninguna CA detras) -- el caso de un servidor casero
+  // sin dominio/Let's Encrypt. Aqui SI se ignoran los errores (nunca va a
+  // haber una CA publica detras a proposito): la confianza real para este
+  // caso se decide aparte, por huella, en onEncrypted() (TOFU). Un
+  // certificado que SI viene de una CA reconocida (p.ej. Let's Encrypt)
+  // pero tiene algun otro problema real (caducado, dominio que no
+  // coincide, revocado...) ya NO se ignora -- antes esto se colaba
+  // tambien sin querer al ignorar TODO incondicionalmente.
+  if (cert.isNull() || !cert.isSelfSigned()) return;
   socket_.ignoreSslErrors();
 }
 

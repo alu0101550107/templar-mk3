@@ -2,6 +2,7 @@
 
 #include <sodium.h>
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -14,6 +15,12 @@ namespace templar::server {
 using namespace templar::proto;
 
 namespace {
+
+// Un mensaje de chat cifrado real (texto, o un FileBlobPointer -- que es
+// solo un puntero pequeno, el archivo en si va por BlobStore) nunca se
+// acerca a esto -- ver el comentario junto a su uso en handleSendMsg/
+// handleSendGroupMsg.
+constexpr size_t kMaxChatMessageBytes = 1024 * 1024;
 
 void sendErr(const std::shared_ptr<Session>& session, MsgType type, const std::string& reason) {
   Writer w;
@@ -104,7 +111,49 @@ void Router::handleFrame(const std::shared_ptr<Session>& session, MsgType type,
   }
 }
 
+bool Router::isRegisterLocked(const std::string& ip) {
+  std::lock_guard<std::mutex> lock(registerAttemptsMutex_);
+  auto it = registerAttemptsByIp_.find(ip);
+  if (it == registerAttemptsByIp_.end()) return false;
+
+  auto now = std::chrono::steady_clock::now();
+  auto& timestamps = it->second;
+  timestamps.erase(std::remove_if(timestamps.begin(), timestamps.end(),
+                                  [&](auto t) { return now - t > kRegisterAttemptWindow; }),
+                   timestamps.end());
+  return timestamps.size() >= kMaxRegisterAttempts;
+}
+
+void Router::recordRegisterAttempt(const std::string& ip) {
+  std::lock_guard<std::mutex> lock(registerAttemptsMutex_);
+  registerAttemptsByIp_[ip].push_back(std::chrono::steady_clock::now());
+}
+
+bool Router::tryRegisterConnection(const std::string& ip) {
+  std::lock_guard<std::mutex> lock(connectionsMutex_);
+  int& count = connectionsByIp_[ip];
+  if (count >= kMaxConnectionsPerIp) return false;
+  ++count;
+  return true;
+}
+
+void Router::unregisterConnection(const std::string& ip) {
+  std::lock_guard<std::mutex> lock(connectionsMutex_);
+  auto it = connectionsByIp_.find(ip);
+  if (it == connectionsByIp_.end()) return;
+  if (--it->second <= 0) connectionsByIp_.erase(it);
+}
+
 void Router::handleRegister(const std::shared_ptr<Session>& session, const Bytes& payload) {
+  const std::string& ip = session->remoteAddress();
+  if (isRegisterLocked(ip)) {
+    sendErr(session, MsgType::RegisterErr,
+           "Demasiados registros desde esta direccion. Espera un momento antes de volver a "
+           "intentarlo.");
+    return;
+  }
+  recordRegisterAttempt(ip);
+
   Reader r(payload);
   std::string username = r.str();
   std::string password = r.str();
@@ -129,9 +178,9 @@ void Router::handleRegister(const std::shared_ptr<Session>& session, const Bytes
     return;
   }
 
-  // NOTA Fase 1: la contraseña viaja en claro sobre el socket -- aceptable
-  // solo para desarrollo local, hasta que se añada TLS de transporte en una
-  // fase posterior. No usar sobre una red no confiable todavía.
+  // La contrasena viaja cifrada por el TLS de transporte (ver main.cpp) --
+  // aqui solo se protege ademas con Argon2id antes de guardarla, para que
+  // ni el propio operador del servidor pueda leerla en la base de datos.
   char hashBuf[crypto_pwhash_STRBYTES];
   if (crypto_pwhash_str(hashBuf, password.c_str(), password.size(),
                         crypto_pwhash_OPSLIMIT_INTERACTIVE,
@@ -276,6 +325,12 @@ void Router::handleSendMsg(const std::shared_ptr<Session>& session, const Bytes&
   Bytes ciphertext = r.blob();
   Bytes usedOneTimePrekeyPub = r.blob();
 
+  // Un mensaje de texto cifrado real nunca se acerca a esto -- sin este
+  // limite, alguien podria usar SendMsg como canal alternativo para volcar
+  // hasta 16 MiB (el tope de un frame entero) por mensaje en el buzon de
+  // una victima, sin pasar por BlobStore ni su propio limite de tamano.
+  if (ciphertext.size() > kMaxChatMessageBytes) return;
+
   relayEncryptedMessage(session, recipient, isFirst, senderIdentityPkX25519, senderEphemeralPk,
                         ciphertext, "", usedOneTimePrekeyPub);
 }
@@ -291,6 +346,8 @@ void Router::handleSendGroupMsg(const std::shared_ptr<Session>& session, const B
   Bytes senderEphemeralPk = r.blob();
   Bytes ciphertext = r.blob();
   Bytes usedOneTimePrekeyPub = r.blob();
+
+  if (ciphertext.size() > kMaxChatMessageBytes) return;
 
   // Autorizacion server-side: tanto quien manda como el destinatario deben
   // ser miembros actuales del grupo. El cliente hace un envio (fan-out) por
@@ -489,7 +546,13 @@ void Router::handleInviteToGroup(const std::shared_ptr<Session>& session, const 
     return;
   }
 
-  int64_t inviteId = db_.enqueueGroupInvite(groupId, invitee, session->username());
+  int64_t inviteId;
+  try {
+    inviteId = db_.enqueueGroupInvite(groupId, invitee, session->username());
+  } catch (const std::exception& e) {
+    sendGroupErr(session, "invite", e.what());
+    return;
+  }
 
   if (auto inviteeSession = findOnline(invitee)) {
     pushGroupInvite(inviteeSession, inviteId, groupId, group->name, session->username());
@@ -733,6 +796,8 @@ void Router::handleDownloadBlob(const std::shared_ptr<Session>& session, const B
 }
 
 void Router::onDisconnect(const std::shared_ptr<Session>& session) {
+  unregisterConnection(session->remoteAddress());
+
   if (!session->isLoggedIn()) return;
 
   {

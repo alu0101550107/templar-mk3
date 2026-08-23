@@ -397,15 +397,26 @@ Page {
                         prefix = "<span style='color:" + theme.systemMessage + ";'>[" + hhmm + "] </span>"
                     }
 
-                    // Escapado manual (< > &) y saltos de linea reales
-                    // como <br> -- RichText interpreta el texto como HTML,
-                    // asi que sin esto un mensaje con "<" o varias lineas
+                    // Escapado manual (< > &) -- RichText interpreta el
+                    // texto como HTML, asi que sin esto un mensaje con "<"
                     // saldria mal (o, en el peor caso, con marcado roto).
-                    var body = model.rawHtml ? model.text : model.text
-                        .replace(/&/g, "&amp;")
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;")
-                        .replace(/\n/g, "<br>")
+                    // Se aplica tanto al cuerpo como a model.who (nombre de
+                    // quien mando el mensaje): el servidor no valida el
+                    // charset de un username (solo longitud), asi que sin
+                    // escapar esto tambien, una cuenta con un nombre tipo
+                    // "</b><a href=...>" podria inyectar marcado/enlaces en
+                    // la vista de chat de cualquiera con quien hable --
+                    // mismo criterio que ya aplica el cliente de escritorio
+                    // (MainWindow.cpp, .toHtmlEscaped() sobre "who" siempre,
+                    // independientemente de rawHtml).
+                    function escapeHtml(s) {
+                        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                    }
+
+                    var who = escapeHtml(model.who)
+                    // Saltos de linea reales como <br> -- solo tiene sentido
+                    // sobre el cuerpo del mensaje, no sobre el nombre.
+                    var body = model.rawHtml ? model.text : escapeHtml(model.text).replace(/\n/g, "<br>")
 
                     // Resalta la busqueda en el mensaje que la barra de
                     // busqueda tiene enfocado ahora mismo -- equivalente
@@ -433,7 +444,7 @@ Page {
                         rightCell = "<i style='color:" + theme.systemMessage + ";'>[SISTEMA] " + body + "</i>"
                     } else {
                         var nameColor = model.kind === 1 ? theme.ownMessage : theme.peerMessage
-                        leftCell = prefix + "<b style='color:" + nameColor + ";'>" + model.who + ":</b>"
+                        leftCell = prefix + "<b style='color:" + nameColor + ";'>" + who + ":</b>"
                         rightCell = body
                     }
 

@@ -9,15 +9,32 @@ namespace templar::server {
 using namespace templar::proto;
 namespace asio = boost::asio;
 
-Session::Session(SslStream socket, Router& router) : socket_(std::move(socket)), router_(router) {
+Session::Session(SslStream socket, Router& router)
+    : socket_(std::move(socket)), router_(router), preAuthTimer_(socket_.get_executor()) {
   boost::system::error_code ec;
   auto endpoint = socket_.lowest_layer().remote_endpoint(ec);
   remoteAddress_ = ec ? "desconocida" : endpoint.address().to_string();
 }
 
 void Session::start() {
+  preAuthTimer_.expires_after(kPreAuthTimeout);
   asio::co_spawn(socket_.get_executor(), [self = shared_from_this()] { return self->run(); },
                  asio::detached);
+  asio::co_spawn(
+      socket_.get_executor(), [self = shared_from_this()] { return self->watchPreAuthTimeout(); },
+      asio::detached);
+}
+
+asio::awaitable<void> Session::watchPreAuthTimeout() {
+  boost::system::error_code ec;
+  co_await preAuthTimer_.async_wait(asio::redirect_error(asio::use_awaitable, ec));
+  // ec = el timer se cancelo (login/registro exitoso via setUsername(), o
+  // la sesion ya se cerro por otro motivo) -- en cualquier caso, nada que
+  // hacer. Sin ec = de verdad paso kPreAuthTimeout sin autenticarse.
+  if (ec) co_return;
+
+  boost::system::error_code closeEc;
+  socket_.lowest_layer().close(closeEc);
 }
 
 void Session::deliver(MsgType type, const Bytes& payload) {

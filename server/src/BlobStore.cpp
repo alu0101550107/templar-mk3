@@ -10,10 +10,11 @@ namespace templar::server {
 namespace fs = std::filesystem;
 
 BlobStore::BlobStore(Database& db, std::string storageDir, uint64_t maxBlobBytes,
-                     std::chrono::seconds retention)
+                     uint64_t maxBlobBytesPerUser, std::chrono::seconds retention)
     : db_(db),
       storageDir_(std::move(storageDir)),
       maxBlobBytes_(maxBlobBytes),
+      maxBlobBytesPerUser_(maxBlobBytesPerUser),
       retention_(retention) {
   fs::create_directories(storageDir_);
 }
@@ -23,8 +24,25 @@ std::string BlobStore::filePathFor(const std::string& blobId) const {
 }
 
 std::string BlobStore::beginUpload(const std::string& ownerUsername, uint64_t totalSize) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
   if (totalSize > maxBlobBytes_) {
     throw std::runtime_error("El archivo supera el limite de tamano del servidor.");
+  }
+
+  // Tamano REAL en disco de lo que este usuario ya tiene ocupado (no la
+  // columna `size` de la BD -- esa es el tamano DECLARADO al empezar cada
+  // subida, no el real; confiar en ella dejaria declarar totalSize=0 y
+  // saltarse la cuota por completo). Incluye subidas a medio terminar: ya
+  // ocupan disco de verdad, y no contarlas dejaria burlar la cuota sin mas
+  // que no terminarlas nunca.
+  uint64_t used = 0;
+  for (const auto& id : db_.listBlobIdsForOwner(ownerUsername)) {
+    std::error_code ec;
+    used += fs::file_size(filePathFor(id), ec);  // ec ignorado: ya no esta en disco, cuenta 0
+  }
+  if (used + totalSize > maxBlobBytesPerUser_) {
+    throw std::runtime_error("Superarias tu cuota de almacenamiento de archivos en el servidor.");
   }
 
   std::string blobId = db_.createBlobRecord(ownerUsername, totalSize);

@@ -257,6 +257,17 @@ int64_t Database::enqueueMessage(const std::string& recipientUsername,
                                  const Bytes& usedOneTimePrekeyPub) {
   std::lock_guard<std::mutex> lock(mutex_);
 
+  {
+    Stmt count(db_,
+              "SELECT COUNT(*) FROM mailbox WHERE recipient_id = "
+              "(SELECT id FROM users WHERE username = ?);");
+    bindText(count, 1, recipientUsername);
+    if (sqlite3_step(count) == SQLITE_ROW &&
+        sqlite3_column_int64(count, 0) >= kMaxPendingMailboxPerRecipient) {
+      throw std::runtime_error("enqueueMessage: buzon de '" + recipientUsername + "' lleno");
+    }
+  }
+
   Stmt s(db_,
         "INSERT INTO mailbox (recipient_id, sender_username, is_first, "
         "sender_identity_pk_x25519, sender_ephemeral_pk, ciphertext, created_at, group_id, "
@@ -477,6 +488,16 @@ int64_t Database::enqueueGroupInvite(const std::string& groupId, const std::stri
                                      const std::string& inviterUsername) {
   std::lock_guard<std::mutex> lock(mutex_);
 
+  {
+    Stmt count(db_, "SELECT COUNT(*) FROM group_invites WHERE invitee_username = ?;");
+    bindText(count, 1, inviteeUsername);
+    if (sqlite3_step(count) == SQLITE_ROW &&
+        sqlite3_column_int64(count, 0) >= kMaxPendingInvitesPerRecipient) {
+      throw std::runtime_error("'" + inviteeUsername + "' tiene demasiadas invitaciones "
+                               "pendientes, prueba mas tarde.");
+    }
+  }
+
   Stmt s(db_,
         "INSERT INTO group_invites (group_id, invitee_username, inviter_username, created_at) "
         "VALUES (?, ?, ?, ?);");
@@ -540,13 +561,28 @@ void Database::addOneTimePrekeys(const std::string& username, const std::vector<
   if (sqlite3_step(user) != SQLITE_ROW) return;  // usuario inexistente -- se ignora en silencio
   int64_t userId = sqlite3_column_int64(user, 0);
 
+  // handlePublishOtpk (Router.cpp) ya limita cada LLAMADA a <=200 claves,
+  // pero nada impide llamarlo en bucle sin fin -- este es el tope TOTAL
+  // acumulado: lo que sobre de aqui en adelante se descarta en silencio,
+  // mismo criterio que ya usa handlePublishOtpk para claves con tamano
+  // invalido.
+  int64_t existing = 0;
+  {
+    Stmt count(db_, "SELECT COUNT(*) FROM one_time_prekeys WHERE user_id = ?;");
+    sqlite3_bind_int64(count, 1, userId);
+    if (sqlite3_step(count) == SQLITE_ROW) existing = sqlite3_column_int64(count, 0);
+  }
+
   for (const Bytes& pub : publicKeys) {
+    if (existing >= kMaxOneTimePrekeysPerUser) break;
+
     Stmt s(db_, "INSERT INTO one_time_prekeys (user_id, public_key) VALUES (?, ?);");
     sqlite3_bind_int64(s, 1, userId);
     bindBlob(s, 2, pub);
     if (sqlite3_step(s) != SQLITE_DONE) {
       throw std::runtime_error(std::string("addOneTimePrekeys fallo: ") + sqlite3_errmsg(db_));
     }
+    ++existing;
   }
 }
 
@@ -638,6 +674,19 @@ void Database::deleteBlobRecord(const std::string& blobId) {
   if (sqlite3_step(s) != SQLITE_DONE) {
     throw std::runtime_error(std::string("deleteBlobRecord fallo: ") + sqlite3_errmsg(db_));
   }
+}
+
+std::vector<std::string> Database::listBlobIdsForOwner(const std::string& ownerUsername) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  Stmt s(db_, "SELECT id FROM blobs WHERE owner_username = ?;");
+  bindText(s, 1, ownerUsername);
+
+  std::vector<std::string> out;
+  while (sqlite3_step(s) == SQLITE_ROW) {
+    out.push_back(columnText(s, 0));
+  }
+  return out;
 }
 
 }  // namespace templar::server

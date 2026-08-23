@@ -5,6 +5,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "BlobStore.hpp"
 #include "Database.hpp"
@@ -25,6 +26,17 @@ class Router {
                    const templar::proto::Bytes& payload);
 
   void onDisconnect(const std::shared_ptr<Session>& session);
+
+  // --- Limite de conexiones concurrentes por IP ---
+  // Llamado desde listener() en main.cpp, ANTES de intentar el handshake
+  // TLS (para rechazar barato) -- no forma parte de la logica de aplicacion
+  // del resto de la clase, pero vive aqui porque ya es donde vive el estado
+  // por IP analogo (los intentos de login/registro). Independiente de si la
+  // conexion llega a loguearse o no.
+  static constexpr int kMaxConnectionsPerIp = 20;
+
+  bool tryRegisterConnection(const std::string& ip);
+  void unregisterConnection(const std::string& ip);
 
  private:
   void handleRegister(const std::shared_ptr<Session>& session, const templar::proto::Bytes& payload);
@@ -84,6 +96,25 @@ class Router {
 
   std::mutex loginAttemptsMutex_;
   std::unordered_map<std::string, LoginAttempts> loginAttemptsByIp_;
+
+  // --- Limite de intentos de REGISTRO ---
+  // A diferencia del login (donde solo cuentan los fallos, y un exito
+  // resetea), aqui cuenta CUALQUIER intento (exito o fallo): una cuenta
+  // legitima solo se registra una vez, asi que basta con acotar el
+  // volumen bruto desde una IP en una ventana deslizante -- sin timer de
+  // bloqueo aparte, mas simple que LoginAttempts a proposito.
+  static constexpr size_t kMaxRegisterAttempts = 5;
+  static constexpr std::chrono::minutes kRegisterAttemptWindow{60};
+
+  bool isRegisterLocked(const std::string& ip);
+  void recordRegisterAttempt(const std::string& ip);
+
+  std::mutex registerAttemptsMutex_;
+  std::unordered_map<std::string, std::vector<std::chrono::steady_clock::time_point>>
+      registerAttemptsByIp_;
+
+  std::mutex connectionsMutex_;
+  std::unordered_map<std::string, int> connectionsByIp_;
 
   void flushMailbox(const std::shared_ptr<Session>& session);
   void flushGroupInvites(const std::shared_ptr<Session>& session);

@@ -24,12 +24,14 @@ using templar::proto::Bytes;
 class BlobStore {
  public:
   BlobStore(Database& db, std::string storageDir, uint64_t maxBlobBytes,
-           std::chrono::seconds retention);
+           uint64_t maxBlobBytesPerUser, std::chrono::seconds retention);
 
   // Genera un id nuevo, reserva la fila en la BD (complete=0) y crea el
   // archivo vacio en disco. Lanza si totalSize declarado ya supera
   // maxBlobBytes (el limite real se sigue aplicando fragmento a fragmento
-  // en appendChunk, por si un cliente miente sobre el tamano declarado).
+  // en appendChunk, por si un cliente miente sobre el tamano declarado), o
+  // si sumado a lo que este usuario ya tiene ocupado (todos sus blobs,
+  // completos o no) superaria maxBlobBytesPerUser.
   std::string beginUpload(const std::string& ownerUsername, uint64_t totalSize);
 
   // Anade un fragmento al final del archivo en disco. Lanza si el blobId
@@ -59,6 +61,7 @@ class BlobStore {
   Database& db_;
   std::string storageDir_;
   uint64_t maxBlobBytes_;
+  uint64_t maxBlobBytesPerUser_;
   std::chrono::seconds retention_;
   std::mutex mutex_;  // serializa las escrituras en disco de un mismo blob
 };

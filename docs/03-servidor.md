@@ -217,3 +217,15 @@ ciegas), pero es exactamente el mismo modelo de confianza que ya usas cada
 vez que te conectas por SSH a un servidor nuevo, y es apropiado para el
 caso de uso: un grupo pequeño donde la primera conexion normalmente pasa
 por un canal donde ya confias (te pasan la IP y el puerto directamente).
+
+Esto es solo el camino por defecto (sin dominio, pensado para VPN/LAN). Si
+el servidor tiene un dominio o subdominio propio (p.ej. DNS dinamico tipo
+DuckDNS) y esta expuesto directamente a Internet, `setup_letsencrypt.sh`
+sustituye ese certificado autofirmado por uno real de Let's Encrypt.
+`NetworkManager::onSslErrors` distingue ambos casos por
+`QSslCertificate::isSelfSigned()`: solo ignora los errores de TLS cuando el
+certificado es de verdad autofirmado (el caso de arriba); si viene de una
+CA reconocida pero tiene algun problema real (caducado, dominio que no
+coincide, revocado...) ya no se ignora, se corta la conexion como haria
+cualquier cliente HTTPS normal. El TOFU de `checkAndRememberCertificate`
+sigue corriendo en ambos casos, como capa extra.

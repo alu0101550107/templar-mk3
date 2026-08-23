@@ -123,7 +123,7 @@ cmake --build build -j"$(nproc)"
 **Servidor** (una sola maquina hace de servidor; el resto se conecta a ella):
 
 ```bash
-./build/server/templar_server [puerto=8080] [ruta_db]
+./build/server/templar_server [puerto=8080] [ruta_db] [direccion_bind=0.0.0.0]
 ```
 
 Por defecto escucha en el puerto 8080 y guarda su base de datos y su
@@ -182,7 +182,13 @@ interferir con tu servidor real):
 - **Sin editar ni borrar mensajes ya enviados.**
 - El servidor requiere ejecutarse sobre una red en la que confíes en los
   pares (Tailscale, VPN, LAN) -- no está pensado para exponerlo directamente
-  a Internet sin protecciones adicionales.
+  a Internet sin protecciones adicionales. `setup_letsencrypt.sh` resuelve
+  la parte de transporte (sustituye el certificado autofirmado/TOFU por uno
+  real de Let's Encrypt, para un despliegue con dominio propio o DNS
+  dinámico tipo DuckDNS), pero el registro de cuentas sigue sin límite de
+  tasa ni invitación, y no hay tope de conexiones concurrentes por IP ni
+  cuota de almacenamiento de archivos por usuario -- nada de eso está
+  pensado todavía para un servidor abierto al público en general.
 
 ## Estructura del repositorio
 

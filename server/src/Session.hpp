@@ -3,6 +3,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <string>
@@ -30,7 +31,13 @@ class Session : public std::enable_shared_from_this<Session> {
   // internamente se postea al strand del socket.
   void deliver(templar::proto::MsgType type, const templar::proto::Bytes& payload);
 
-  void setUsername(std::string username) { username_ = std::move(username); }
+  void setUsername(std::string username) {
+    username_ = std::move(username);
+    // Login/registro exitosos son las dos unicas llamadas a esto -- cancela
+    // el vigilante de kPreAuthTimeout (ver watchPreAuthTimeout), que ya no
+    // hace falta una vez la sesion esta autenticada.
+    preAuthTimer_.cancel();
+  }
   const std::string& username() const { return username_; }
   bool isLoggedIn() const { return !username_.empty(); }
 
@@ -41,6 +48,18 @@ class Session : public std::enable_shared_from_this<Session> {
 
  private:
   boost::asio::awaitable<void> run();
+
+  // Una conexion que completa el handshake TLS pero nunca manda Login ni
+  // Register ocuparia un socket/Session indefinidamente si no fuera por
+  // esto -- deliberadamente NO es un timeout de inactividad general (una
+  // sesion ya logueada puede estar en silencio horas de forma legitima,
+  // solo recibiendo mensajes push; cortarla rompera la entrega en tiempo
+  // real). Se cancela en cuanto setUsername() confirma un login/registro
+  // exitoso; si expira antes de eso, cierra el socket a bajo nivel -- el
+  // async_read_some bloqueado en run() falla solo y la limpieza normal
+  // (onDisconnect, etc.) se dispara igual que cualquier desconexion.
+  static constexpr std::chrono::seconds kPreAuthTimeout{20};
+  boost::asio::awaitable<void> watchPreAuthTimeout();
 
   // Arranca el siguiente envio de la cola si no hay ya uno en curso. Boost.Asio
   // prohibe tener mas de un async_write() en vuelo a la vez sobre el mismo
@@ -56,6 +75,7 @@ class Session : public std::enable_shared_from_this<Session> {
   std::string username_;
   std::string remoteAddress_;
   std::deque<std::shared_ptr<templar::proto::Bytes>> writeQueue_;
+  boost::asio::steady_timer preAuthTimer_;
 };
 
 }  // namespace templar::server
