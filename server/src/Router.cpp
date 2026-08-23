@@ -147,6 +147,9 @@ void Router::unregisterConnection(const std::string& ip) {
 void Router::handleRegister(const std::shared_ptr<Session>& session, const Bytes& payload) {
   const std::string& ip = session->remoteAddress();
   if (isRegisterLocked(ip)) {
+    // Mismo criterio que el log de login fallido de arriba -- formato
+    // estable para que fail2ban lo banee por firewall.
+    std::cerr << "[Servidor] Registro rechazado (limite de tasa) desde " << ip << "\n";
     sendErr(session, MsgType::RegisterErr,
            "Demasiados registros desde esta direccion. Espera un momento antes de volver a "
            "intentarlo.");
@@ -252,6 +255,11 @@ void Router::handleLogin(const std::shared_ptr<Session>& session, const Bytes& p
   if (!user || crypto_pwhash_str_verify(user->passwordHash.c_str(), password.c_str(),
                                         password.size()) != 0) {
     recordLoginFailure(ip);
+    // Formato estable a proposito -- es la linea que un filtro de fail2ban
+    // (ver deploy_server.sh/docs) busca para banear por firewall a quien
+    // insiste con credenciales invalidas, por debajo del rate-limit interno
+    // de arriba (que solo retrasa, no bloquea a nivel de red).
+    std::cerr << "[Servidor] Login fallido desde " << ip << "\n";
     sendErr(session, MsgType::LoginErr, genericErr);
     return;
   }
