@@ -42,6 +42,7 @@ Dialog {
         theme.peerMessage = draftPeerMessage
         theme.systemMessage = draftSystemMessage
         theme.save()
+        language.setLanguage(languageCombo.currentValue)
     }
 
     background: Rectangle {
@@ -52,7 +53,7 @@ Dialog {
     }
 
     header: Label {
-        text: "Ajustes"
+        text: qsTr("Ajustes")
         color: theme.accent
         font.bold: true
         font.family: "JetBrains Mono"
@@ -64,13 +65,13 @@ Dialog {
         spacing: 8
 
         TemplarButton {
-            text: "Cancelar"
+            text: qsTr("Cancelar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.reject()
         }
         TemplarButton {
-            text: "Guardar"
+            text: qsTr("Guardar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.accept()
@@ -95,7 +96,7 @@ Dialog {
         }
 
         header: Label {
-            text: "Confirma tu contraseña"
+            text: qsTr("Confirma tu contraseña")
             color: theme.accent
             font.bold: true
             font.family: "JetBrains Mono"
@@ -105,7 +106,7 @@ Dialog {
 
         contentItem: TemplarTextField {
             id: biometricPasswordField
-            placeholderText: "Contraseña"
+            placeholderText: qsTr("Contraseña")
             echoMode: TextInput.Password
         }
 
@@ -114,13 +115,13 @@ Dialog {
             spacing: 8
 
             TemplarButton {
-                text: "Cancelar"
+                text: qsTr("Cancelar")
                 Layout.fillWidth: true
                 Layout.margins: 8
                 onClicked: biometricPasswordDialog.reject()
             }
             TemplarButton {
-                text: "Confirmar"
+                text: qsTr("Confirmar")
                 Layout.fillWidth: true
                 Layout.margins: 8
                 onClicked: biometricPasswordDialog.accept()
@@ -173,7 +174,7 @@ Dialog {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "Fondo:"; color: theme.foreground; Layout.fillWidth: true }
+            Label { text: qsTr("Fondo:"); color: theme.foreground; Layout.fillWidth: true }
             Rectangle {
                 width: 48; height: 24
                 color: dialog.draftBackground
@@ -186,7 +187,7 @@ Dialog {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "Texto general:"; color: theme.foreground; Layout.fillWidth: true }
+            Label { text: qsTr("Texto general:"); color: theme.foreground; Layout.fillWidth: true }
             Rectangle {
                 width: 48; height: 24
                 color: dialog.draftForeground
@@ -199,7 +200,7 @@ Dialog {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "Bordes / botones:"; color: theme.foreground; Layout.fillWidth: true }
+            Label { text: qsTr("Bordes / botones:"); color: theme.foreground; Layout.fillWidth: true }
             Rectangle {
                 width: 48; height: 24
                 color: dialog.draftAccent
@@ -212,7 +213,7 @@ Dialog {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "Tu nombre en el chat:"; color: theme.foreground; Layout.fillWidth: true }
+            Label { text: qsTr("Tu nombre en el chat:"); color: theme.foreground; Layout.fillWidth: true }
             Rectangle {
                 width: 48; height: 24
                 color: dialog.draftOwnMessage
@@ -225,7 +226,7 @@ Dialog {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "Nombre del interlocutor:"; color: theme.foreground; Layout.fillWidth: true }
+            Label { text: qsTr("Nombre del interlocutor:"); color: theme.foreground; Layout.fillWidth: true }
             Rectangle {
                 width: 48; height: 24
                 color: dialog.draftPeerMessage
@@ -238,7 +239,7 @@ Dialog {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "Mensajes de sistema:"; color: theme.foreground; Layout.fillWidth: true }
+            Label { text: qsTr("Mensajes de sistema:"); color: theme.foreground; Layout.fillWidth: true }
             Rectangle {
                 width: 48; height: 24
                 color: dialog.draftSystemMessage
@@ -250,7 +251,7 @@ Dialog {
         }
 
         TemplarButton {
-            text: "Restaurar valores por defecto"
+            text: qsTr("Restaurar valores por defecto")
             Layout.fillWidth: true
             Layout.topMargin: 8
             onClicked: {
@@ -263,6 +264,36 @@ Dialog {
             }
         }
 
+        Label {
+            text: qsTr("Idioma")
+            color: theme.accent
+            font.bold: true
+            Layout.topMargin: 8
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Label { text: qsTr("Idioma de la interfaz:"); color: theme.foreground; Layout.fillWidth: true }
+            ComboBox {
+                id: languageCombo
+                textRole: "name"
+                valueRole: "code"
+                model: [
+                    { code: "es", name: language.displayNameForCode("es") },
+                    { code: "en", name: language.displayNameForCode("en") }
+                ]
+                Component.onCompleted: currentIndex = indexOfValue(language.currentCode)
+            }
+        }
+
+        Label {
+            text: qsTr("El cambio de idioma se aplica al reiniciar la app.")
+            color: "#888888"
+            font.pixelSize: 11
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+
         // Oculto por completo si no hay hardware/huellas registradas (o en
         // escritorio, donde biometric.available siempre es false -- ver
         // BiometricBridge.cpp).
@@ -272,7 +303,7 @@ Dialog {
             Layout.topMargin: 8
 
             Label {
-                text: "Inicio de sesión con huella"
+                text: qsTr("Inicio de sesión con huella")
                 color: theme.foreground
                 Layout.fillWidth: true
             }

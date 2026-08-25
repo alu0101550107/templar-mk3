@@ -23,6 +23,12 @@ class EmojiPicker : public QWidget {
 
  private:
   void buildCategory(QTabWidget* tabs, const QString& title, const QStringList& emojis);
+  // Traduce el nombre interno (clave estable, no traducida, ver kCategories
+  // en el .cpp) al nombre de la pestaña -- llamadas a tr() explicitas en un
+  // metodo real (no en un array a nivel de namespace) para que lupdate le
+  // asigne el contexto correcto (templar::client::EmojiPicker), del que SI
+  // depende QTranslator en tiempo de ejecucion.
+  QString categoryTitle(const char* key) const;
 };
 
 }  // namespace templar::client

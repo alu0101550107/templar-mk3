@@ -28,14 +28,14 @@ Popup {
 
     // Mismo set curado y mismo orden que kCategories en EmojiPicker.cpp.
     readonly property var categories: [
-        { title: "Caras", emojis: "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😋 😛 😜 🤪 🤑 🤗 🤭 🤫 🤔 😐 😑 😶 🙄 😏 😴 🤤 😪 😮 😲 🥺 😢 😭 😤 😡 🤯 🥳 😎 🤓 🥵 🥶 😷 🤒".split(" ") },
-        { title: "Gestos", emojis: "👍 👎 👌 ✌️ 🤞 🤟 🤘 👋 🤙 💪 🙏 👏 🙌 🤝 👊 ✊ 👆 👇 👉 👈 🖐️ ✋ 🤚 💅 🤦 🤷".split(" ") },
-        { title: "Amor", emojis: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 💕 💞 💓 💗 💖 💘 💝 💟".split(" ") },
-        { title: "Animales", emojis: "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🦄 🐴 🐝 🐛 🦋 🐌 🐢 🐍 🐙 🐬 🐳 🐘 🦒 🌵 🌲 🌸 🌻 🌈 ☀️ 🌙 ⭐ ⚡ 🔥 💧 ❄️".split(" ") },
-        { title: "Comida", emojis: "🍏 🍎 🍌 🍉 🍇 🍓 🍒 🍑 🥭 🍍 🥑 🍆 🍕 🍔 🍟 🌭 🥪 🌮 🌯 🍣 🍜 🍝 🍿 🍩 🍪 🎂 🍰 🍫 🍬 🍭 🍺 🍻 🍷 🍹 ☕ 🍵".split(" ") },
-        { title: "Actividades", emojis: "⚽ 🏀 🏈 ⚾ 🎾 🏐 🏓 🎮 🎲 🎯 🎳 🎸 🎧 🎨 🎬 🏆 🥇 🎉 🎊 🎁 🎈".split(" ") },
-        { title: "Objetos", emojis: "💡 📱 💻 ⌨️ 🖥️ 🖨️ 📷 📸 🔋 🔌 💰 💵 💎 🔧 🔨 🔒 🔑 📌 📎 ✂️ 📝 📅 ⏰ ⌚".split(" ") },
-        { title: "Simbolos", emojis: "✅ ❌ ❓ ❗ ⚠️ 🚫 ♻️ 🔴 🟠 🟡 🟢 🔵 🟣 ⚪ ⚫ ➕ ➖ ➗ ✖️ 💯 🆗 🆕".split(" ") }
+        { title: qsTr("Caras"), emojis: "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😋 😛 😜 🤪 🤑 🤗 🤭 🤫 🤔 😐 😑 😶 🙄 😏 😴 🤤 😪 😮 😲 🥺 😢 😭 😤 😡 🤯 🥳 😎 🤓 🥵 🥶 😷 🤒".split(" ") },
+        { title: qsTr("Gestos"), emojis: "👍 👎 👌 ✌️ 🤞 🤟 🤘 👋 🤙 💪 🙏 👏 🙌 🤝 👊 ✊ 👆 👇 👉 👈 🖐️ ✋ 🤚 💅 🤦 🤷".split(" ") },
+        { title: qsTr("Amor"), emojis: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 💕 💞 💓 💗 💖 💘 💝 💟".split(" ") },
+        { title: qsTr("Animales"), emojis: "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🦄 🐴 🐝 🐛 🦋 🐌 🐢 🐍 🐙 🐬 🐳 🐘 🦒 🌵 🌲 🌸 🌻 🌈 ☀️ 🌙 ⭐ ⚡ 🔥 💧 ❄️".split(" ") },
+        { title: qsTr("Comida"), emojis: "🍏 🍎 🍌 🍉 🍇 🍓 🍒 🍑 🥭 🍍 🥑 🍆 🍕 🍔 🍟 🌭 🥪 🌮 🌯 🍣 🍜 🍝 🍿 🍩 🍪 🎂 🍰 🍫 🍬 🍭 🍺 🍻 🍷 🍹 ☕ 🍵".split(" ") },
+        { title: qsTr("Actividades"), emojis: "⚽ 🏀 🏈 ⚾ 🎾 🏐 🏓 🎮 🎲 🎯 🎳 🎸 🎧 🎨 🎬 🏆 🥇 🎉 🎊 🎁 🎈".split(" ") },
+        { title: qsTr("Objetos"), emojis: "💡 📱 💻 ⌨️ 🖥️ 🖨️ 📷 📸 🔋 🔌 💰 💵 💎 🔧 🔨 🔒 🔑 📌 📎 ✂️ 📝 📅 ⏰ ⌚".split(" ") },
+        { title: qsTr("Simbolos"), emojis: "✅ ❌ ❓ ❗ ⚠️ 🚫 ♻️ 🔴 🟠 🟡 🟢 🔵 🟣 ⚪ ⚫ ➕ ➖ ➗ ✖️ 💯 🆗 🆕".split(" ") }
     ]
 
     ColumnLayout {

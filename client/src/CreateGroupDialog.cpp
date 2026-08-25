@@ -10,17 +10,17 @@ namespace templar::client {
 
 CreateGroupDialog::CreateGroupDialog(const QStringList& contacts, QWidget* parent)
     : QDialog(parent) {
-  setWindowTitle("Crear grupo");
+  setWindowTitle(tr("Crear grupo"));
   setModal(true);
 
   auto* layout = new QVBoxLayout(this);
 
-  layout->addWidget(new QLabel("Nombre del grupo:"));
+  layout->addWidget(new QLabel(tr("Nombre del grupo:")));
   nameEdit_ = new QLineEdit();
   nameEdit_->setObjectName("groupNameEdit");
   layout->addWidget(nameEdit_);
 
-  layout->addWidget(new QLabel("Invitar a:"));
+  layout->addWidget(new QLabel(tr("Invitar a:")));
   contactsList_ = new QListWidget();
   contactsList_->setObjectName("groupContactsList");
   for (const QString& contact : contacts) {

@@ -3,6 +3,8 @@
 #include <QDateTime>
 #include <QLocale>
 
+#include "Language.hpp"
+
 namespace templar::phone {
 
 ChatHistoryModel::ChatHistoryModel(QObject* parent) : QAbstractListModel(parent) {}
@@ -31,7 +33,8 @@ QVariant ChatHistoryModel::data(const QModelIndex& index, int role) const {
     case DateSectionRole: {
       if (line.timestamp <= 0) return QString();
       QDate date = QDateTime::fromSecsSinceEpoch(line.timestamp).date();
-      return QLocale(QLocale::Spanish).toString(date, "d 'de' MMMM 'de' yyyy");
+      QLocale locale = templar::languageLocale(templar::currentLanguage());
+      return locale.toString(date, locale.dateFormat(QLocale::LongFormat));
     }
     default:
       return {};

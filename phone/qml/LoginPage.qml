@@ -43,7 +43,7 @@ Page {
             if (success) {
                 page.biometricError = ""
                 controller.login(controller.rememberedUsername(), password)
-            } else if (errorMessage !== "Cancelado") {
+            } else if (errorMessage !== "CANCELLED") {
                 page.biometricError = errorMessage
             }
         }
@@ -92,14 +92,14 @@ Page {
 
             TemplarTextField {
                 id: hostField
-                placeholderText: "Servidor (host:puerto)"
+                placeholderText: qsTr("Servidor (host:puerto)")
                 text: "127.0.0.1:8080"
                 enabled: !controller.connected
                 Layout.fillWidth: true
             }
 
             TemplarButton {
-                text: "Conectar"
+                text: qsTr("Conectar")
                 enabled: !controller.connected
                 onClicked: controller.connectToServer(hostField.text)
             }
@@ -107,13 +107,13 @@ Page {
 
         TemplarTextField {
             id: userField
-            placeholderText: "Usuario"
+            placeholderText: qsTr("Usuario")
             Layout.fillWidth: true
         }
 
         TemplarTextField {
             id: passField
-            placeholderText: "Contraseña"
+            placeholderText: qsTr("Contraseña")
             echoMode: TextInput.Password
             Layout.fillWidth: true
         }
@@ -123,13 +123,13 @@ Page {
             spacing: 8
 
             TemplarButton {
-                text: "Registrarse"
+                text: qsTr("Registrarse")
                 enabled: controller.connected
                 Layout.fillWidth: true
                 onClicked: controller.registerAccount(userField.text, passField.text)
             }
             TemplarButton {
-                text: "Iniciar sesion"
+                text: qsTr("Iniciar sesion")
                 enabled: controller.connected
                 Layout.fillWidth: true
                 onClicked: controller.login(userField.text, passField.text)
@@ -139,7 +139,7 @@ Page {
         // Oculto si no hay huella activada -- requiere estar conectado
         // igual que "Iniciar sesion", mismo motivo.
         TemplarButton {
-            text: "Usar huella"
+            text: qsTr("Usar huella")
             visible: biometric.available && biometric.enabled
             enabled: controller.connected
             Layout.fillWidth: true

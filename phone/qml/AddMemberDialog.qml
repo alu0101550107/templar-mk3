@@ -23,7 +23,7 @@ Dialog {
     }
 
     header: Label {
-        text: "Anadir miembro"
+        text: qsTr("Anadir miembro")
         color: theme.accent
         font.bold: true
         font.family: "JetBrains Mono"
@@ -35,13 +35,13 @@ Dialog {
         spacing: 8
 
         TemplarButton {
-            text: "Cancelar"
+            text: qsTr("Cancelar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.reject()
         }
         TemplarButton {
-            text: "Invitar"
+            text: qsTr("Invitar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.accept()
@@ -63,7 +63,7 @@ Dialog {
 
         TemplarTextField {
             id: usernameField
-            placeholderText: "Usuario a invitar"
+            placeholderText: qsTr("Usuario a invitar")
             Layout.fillWidth: true
             onAccepted: dialog.accept()
         }

@@ -8,7 +8,7 @@ import QtQuick.Layouts
 // client/src/MainWindow.cpp.
 Page {
     id: page
-    title: "Conversaciones"
+    title: qsTr("Conversaciones")
     // Sin logo desenfocado aqui a proposito -- se reserva para login y para
     // un chat abierto (mismo criterio que loginBackground_/chatBackground_
     // en escritorio: la lista en si no lo llevaba tampoco alli, era
@@ -50,7 +50,7 @@ Page {
             spacing: 4
 
             Label {
-                text: "Conectado como: " + controller.username
+                text: qsTr("Conectado como: %1").arg(controller.username)
                 font.family: "JetBrains Mono"
                 color: theme.accent
                 elide: Text.ElideRight
@@ -110,7 +110,7 @@ Page {
             visible: controller.pendingInvites.length > 0
 
             Label {
-                text: "Invitaciones pendientes"
+                text: qsTr("Invitaciones pendientes")
                 font.family: "JetBrains Mono"
                 font.bold: true
                 color: theme.accent
@@ -125,18 +125,18 @@ Page {
                     spacing: 8
 
                     Label {
-                        text: modelData.groupName + " (invitado por " + modelData.inviter + ")"
+                        text: qsTr("%1 (invitado por %2)").arg(modelData.groupName).arg(modelData.inviter)
                         color: theme.foreground
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
                     TemplarButton {
-                        text: "Aceptar"
+                        text: qsTr("Aceptar")
                         font.pixelSize: 11
                         onClicked: controller.acceptGroupInvite(modelData.inviteId)
                     }
                     TemplarButton {
-                        text: "Rechazar"
+                        text: qsTr("Rechazar")
                         font.pixelSize: 11
                         onClicked: controller.rejectGroupInvite(modelData.inviteId)
                     }
@@ -226,17 +226,17 @@ Page {
                 spacing: 12
 
                 TemplarButton {
-                    text: "Nuevo chat"
+                    text: qsTr("Nuevo chat")
                     onClicked: newChatDialog.open()
                 }
                 TemplarButton {
-                    text: "Nuevo grupo"
+                    text: qsTr("Nuevo grupo")
                     onClicked: createGroupDialog.open()
                 }
             }
 
             Label {
-                text: "Conectado a " + controller.serverAddress
+                text: qsTr("Conectado a %1").arg(controller.serverAddress)
                 visible: controller.connected
                 font.pixelSize: 11
                 color: theme.foreground

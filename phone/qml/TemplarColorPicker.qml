@@ -43,7 +43,7 @@ Dialog {
     }
 
     header: Label {
-        text: "Elegir color"
+        text: qsTr("Elegir color")
         color: theme.accent
         font.bold: true
         font.family: "JetBrains Mono"
@@ -55,13 +55,13 @@ Dialog {
         spacing: 8
 
         TemplarButton {
-            text: "Cancelar"
+            text: qsTr("Cancelar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: picker.reject()
         }
         TemplarButton {
-            text: "Aceptar"
+            text: qsTr("Aceptar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: picker.accept()

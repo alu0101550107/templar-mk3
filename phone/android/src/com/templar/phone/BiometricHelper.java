@@ -147,8 +147,13 @@ public class BiometricHelper {
                         ? "Confirma tu huella para activar el inicio de sesión"
                         : "Iniciar sesión")
                 .setNegativeButton("Cancelar", executor, (dialog, which) -> {
-                    if (isEnabling) nativeOnEnableResult(false, "Cancelado");
-                    else nativeOnUnlockResult(false, null, "Cancelado");
+                    // "CANCELLED" es un codigo interno, no un texto que se
+                    // muestre nunca (ver LoginPage.qml: se usa solo para
+                    // distinguir "el usuario cancelo" de un error real que
+                    // si hay que mostrar) -- por eso no cambia con el idioma,
+                    // a diferencia del resto de strings de este archivo.
+                    if (isEnabling) nativeOnEnableResult(false, "CANCELLED");
+                    else nativeOnUnlockResult(false, null, "CANCELLED");
                 })
                 .build();
 

@@ -1,6 +1,7 @@
 #include "SettingsDialog.hpp"
 
 #include <QColorDialog>
+#include <QComboBox>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -10,23 +11,40 @@
 namespace templar::client {
 
 SettingsDialog::SettingsDialog(const Theme& current, QWidget* parent)
-    : QDialog(parent), theme_(current) {
-  setWindowTitle("Ajustes");
+    : QDialog(parent), theme_(current), language_(currentLanguage()) {
+  setWindowTitle(tr("Ajustes"));
   setModal(true);
 
   auto* layout = new QVBoxLayout(this);
-  layout->addWidget(new QLabel("<b>Colores</b>"));
+  layout->addWidget(new QLabel(tr("<b>Colores</b>")));
 
-  backgroundSwatch_ = addColorRow(layout, "Fondo:", &Theme::background);
-  foregroundSwatch_ = addColorRow(layout, "Texto general:", &Theme::foreground);
-  accentSwatch_ = addColorRow(layout, "Bordes / botones:", &Theme::accent);
-  ownMessageSwatch_ = addColorRow(layout, "Tu nombre en el chat:", &Theme::ownMessage);
-  peerMessageSwatch_ = addColorRow(layout, "Nombre del interlocutor:", &Theme::peerMessage);
-  systemMessageSwatch_ = addColorRow(layout, "Mensajes de sistema:", &Theme::systemMessage);
+  backgroundSwatch_ = addColorRow(layout, tr("Fondo:"), &Theme::background);
+  foregroundSwatch_ = addColorRow(layout, tr("Texto general:"), &Theme::foreground);
+  accentSwatch_ = addColorRow(layout, tr("Bordes / botones:"), &Theme::accent);
+  ownMessageSwatch_ = addColorRow(layout, tr("Tu nombre en el chat:"), &Theme::ownMessage);
+  peerMessageSwatch_ = addColorRow(layout, tr("Nombre del interlocutor:"), &Theme::peerMessage);
+  systemMessageSwatch_ = addColorRow(layout, tr("Mensajes de sistema:"), &Theme::systemMessage);
 
-  auto* restoreButton = new QPushButton("Restaurar valores por defecto");
+  auto* restoreButton = new QPushButton(tr("Restaurar valores por defecto"));
   connect(restoreButton, &QPushButton::clicked, this, &SettingsDialog::restoreDefaults);
   layout->addWidget(restoreButton);
+
+  layout->addWidget(new QLabel(tr("<b>Idioma</b>")));
+  auto* languageRow = new QHBoxLayout();
+  languageRow->addWidget(new QLabel(tr("Idioma de la interfaz:")));
+  languageCombo_ = new QComboBox();
+  languageCombo_->addItem(languageDisplayName(Language::Spanish), languageCode(Language::Spanish));
+  languageCombo_->addItem(languageDisplayName(Language::English), languageCode(Language::English));
+  languageCombo_->setCurrentIndex(language_ == Language::English ? 1 : 0);
+  connect(languageCombo_, &QComboBox::currentIndexChanged, this, [this](int index) {
+    language_ = index == 1 ? Language::English : Language::Spanish;
+  });
+  languageRow->addWidget(languageCombo_, /*stretch=*/1);
+  layout->addLayout(languageRow);
+  auto* languageHintLabel =
+      new QLabel(tr("El cambio de idioma se aplica al reiniciar la app."));
+  languageHintLabel->setStyleSheet("color: #888888;");
+  layout->addWidget(languageHintLabel);
 
   auto* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
@@ -51,7 +69,7 @@ QPushButton* SettingsDialog::addColorRow(QVBoxLayout* layout, const QString& lab
 }
 
 void SettingsDialog::pickColor(QColor Theme::*field, QPushButton* swatch) {
-  QColor chosen = QColorDialog::getColor(theme_.*field, this, "Elegir color");
+  QColor chosen = QColorDialog::getColor(theme_.*field, this, tr("Elegir color"));
   if (!chosen.isValid()) return;  // el usuario cancelo el selector
   theme_.*field = chosen;
   applySwatchColor(swatch, chosen);

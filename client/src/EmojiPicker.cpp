@@ -21,6 +21,12 @@ struct Category {
   const char* emojis;
 };
 
+// `title` es una clave interna ESTABLE, nunca traducida ni mostrada
+// directamente -- EmojiPicker::categoryTitle() la traduce a la pestaña real.
+// No se usa tr() aqui mismo (a nivel de namespace, fuera de cualquier
+// funcion miembro) porque lupdate le asignaria el contexto equivocado para
+// que QTranslator la encuentre en tiempo de ejecucion (ver el comentario de
+// categoryTitle en el .hpp).
 constexpr Category kCategories[] = {
     {"Caras",
      "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😋 😛 😜 🤪 🤑 🤗 🤭 🤫 🤔 😐 😑 😶 🙄 😏 "
@@ -62,13 +68,26 @@ EmojiPicker::EmojiPicker(QWidget* parent) : QWidget(parent, Qt::Popup) {
   for (const Category& cat : kCategories) {
     QStringList emojis =
         QString::fromUtf8(cat.emojis).split(' ', Qt::SkipEmptyParts);
-    buildCategory(tabs, QString::fromUtf8(cat.title), emojis);
+    buildCategory(tabs, categoryTitle(cat.title), emojis);
   }
 
   auto* layout = new QVBoxLayout(this);
   layout->setContentsMargins(4, 4, 4, 4);
   layout->addWidget(tabs);
   resize(360, 280);
+}
+
+QString EmojiPicker::categoryTitle(const char* key) const {
+  const QString k = QString::fromUtf8(key);
+  if (k == "Caras") return tr("Caras");
+  if (k == "Gestos") return tr("Gestos");
+  if (k == "Amor") return tr("Amor");
+  if (k == "Animales") return tr("Animales");
+  if (k == "Comida") return tr("Comida");
+  if (k == "Actividades") return tr("Actividades");
+  if (k == "Objetos") return tr("Objetos");
+  if (k == "Simbolos") return tr("Simbolos");
+  return k;
 }
 
 void EmojiPicker::buildCategory(QTabWidget* tabs, const QString& title, const QStringList& emojis) {

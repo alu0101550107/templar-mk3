@@ -36,6 +36,7 @@
 #include "BackgroundWidget.hpp"
 #include "CreateGroupDialog.hpp"
 #include "EmojiPicker.hpp"
+#include "Language.hpp"
 #include "SettingsDialog.hpp"
 #include "templar/Wire.hpp"
 
@@ -52,7 +53,7 @@ using namespace templar::proto;
 using templar::crypto::PrekeyBundle;
 
 MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
-  setWindowTitle("Templar mk3");
+  setWindowTitle("Templar mk3");  // nombre de marca, no se traduce
   resize(800, 560);
 
   stack_ = new QStackedWidget();
@@ -62,11 +63,11 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
   stack_->addWidget(chatPage_);
   stack_->setCurrentWidget(loginPage_);
 
-  statusLabel_ = new QLabel("Desconectado.");
-  settingsButton_ = new QPushButton("⚙ Ajustes");
+  statusLabel_ = new QLabel(tr("Desconectado."));
+  settingsButton_ = new QPushButton(tr("⚙ Ajustes"));
   closeButton_ = new QPushButton("✕");
   closeButton_->setObjectName("closeButton");
-  closeButton_->setToolTip("Cerrar (sigue en la bandeja del sistema)");
+  closeButton_->setToolTip(tr("Cerrar (sigue en la bandeja del sistema)"));
 
   auto* bottomRow = new QHBoxLayout();
   bottomRow->addWidget(statusLabel_, /*stretch=*/1);
@@ -80,7 +81,7 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
   // El log de sistema es una "conversacion" mas en la barra lateral, pero
   // fija y separada de los chats reales -- asi los avisos de conexion nunca
   // se mezclan con mensajes de un peer.
-  ensureConversationListed(kSystemKey, "Sistema");
+  ensureConversationListed(kSystemKey, tr("Sistema"));
   conversationList_->setCurrentRow(0);
 
   setConnectedUiState(false);
@@ -150,13 +151,13 @@ void MainWindow::setupTrayIcon() {
   }
 
   trayMenu_ = new QMenu(this);
-  QAction* showAction = trayMenu_->addAction("Abrir Templar");
-  QAction* quitAction = trayMenu_->addAction("Salir");
+  QAction* showAction = trayMenu_->addAction(tr("Abrir Templar"));
+  QAction* quitAction = trayMenu_->addAction(tr("Salir"));
   connect(showAction, &QAction::triggered, this, &MainWindow::onTrayShowClicked);
   connect(quitAction, &QAction::triggered, this, &MainWindow::onTrayQuitClicked);
 
   trayIcon_ = new QSystemTrayIcon(QIcon(logoPixmap()), this);
-  trayIcon_->setToolTip("Templar");
+  trayIcon_->setToolTip("Templar");  // nombre de marca, no se traduce
   trayIcon_->setContextMenu(trayMenu_);
   connect(trayIcon_, &QSystemTrayIcon::activated, this, &MainWindow::onTrayActivated);
   trayIcon_->show();
@@ -176,9 +177,9 @@ void MainWindow::closeEvent(QCloseEvent* event) {
   if (!trayHintShown_) {
     trayHintShown_ = true;
     trayIcon_->showMessage(
-        "Templar sigue activo",
-        "Sigue conectado en segundo plano. Haz clic aqui para volver a abrirlo, o usa "
-        "'Salir' en el menu de la bandeja para cerrarlo del todo.",
+        tr("Templar sigue activo"),
+        tr("Sigue conectado en segundo plano. Haz clic aqui para volver a abrirlo, o usa "
+           "'Salir' en el menu de la bandeja para cerrarlo del todo."),
         QSystemTrayIcon::Information, 5000);
   }
 }
@@ -198,7 +199,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
         QString path =
             QUrl::fromPercentEncoding(anchor.mid(kSelfFilePrefix.size()).toUtf8());
         if (!QDesktopServices::openUrl(QUrl::fromLocalFile(path))) {
-          logSystem("No se pudo abrir el archivo: " + path);
+          logSystem(tr("No se pudo abrir el archivo: ") + path);
         }
         return true;
       }
@@ -228,26 +229,26 @@ QWidget* MainWindow::buildLoginPage() {
   hostEdit_->setObjectName("hostEdit");
   portEdit_ = new QLineEdit("8080");
   portEdit_->setObjectName("portEdit");
-  connectButton_ = new QPushButton("Conectar");
+  connectButton_ = new QPushButton(tr("Conectar"));
   connectButton_->setObjectName("connectButton");
 
   auto* connRow = new QHBoxLayout();
-  connRow->addWidget(new QLabel("Servidor:"));
+  connRow->addWidget(new QLabel(tr("Servidor:")));
   connRow->addWidget(hostEdit_);
-  connRow->addWidget(new QLabel("Puerto:"));
+  connRow->addWidget(new QLabel(tr("Puerto:")));
   connRow->addWidget(portEdit_);
   connRow->addWidget(connectButton_);
 
   usernameEdit_ = new QLineEdit();
   usernameEdit_->setObjectName("usernameEdit");
-  usernameEdit_->setPlaceholderText("usuario");
+  usernameEdit_->setPlaceholderText(tr("usuario"));
   passwordEdit_ = new QLineEdit();
   passwordEdit_->setObjectName("passwordEdit");
-  passwordEdit_->setPlaceholderText("contrasena (min. 8 caracteres)");
+  passwordEdit_->setPlaceholderText(tr("contrasena (min. 8 caracteres)"));
   passwordEdit_->setEchoMode(QLineEdit::Password);
-  registerButton_ = new QPushButton("Registrarse");
+  registerButton_ = new QPushButton(tr("Registrarse"));
   registerButton_->setObjectName("registerButton");
-  loginButton_ = new QPushButton("Iniciar sesion");
+  loginButton_ = new QPushButton(tr("Iniciar sesion"));
   loginButton_->setObjectName("loginButton");
 
   auto* authRow = new QHBoxLayout();
@@ -276,11 +277,11 @@ QWidget* MainWindow::buildLoginPage() {
 
 QWidget* MainWindow::buildChatPage() {
   connectedAsLabel_ = new QLabel();
-  disconnectButton_ = new QPushButton("Desconectar");
+  disconnectButton_ = new QPushButton(tr("Desconectar"));
   disconnectButton_->setObjectName("disconnectButton");
   searchToggleButton_ = new QPushButton("🔎");
   searchToggleButton_->setObjectName("searchToggleButton");
-  searchToggleButton_->setToolTip("Buscar en esta conversacion");
+  searchToggleButton_->setToolTip(tr("Buscar en esta conversacion"));
 
   auto* topRow = new QHBoxLayout();
   topRow->addWidget(connectedAsLabel_, /*stretch=*/1);
@@ -291,32 +292,32 @@ QWidget* MainWindow::buildChatPage() {
   conversationList_->setObjectName("conversationList");
   newChatPeerEdit_ = new QLineEdit();
   newChatPeerEdit_->setObjectName("newChatPeerEdit");
-  newChatPeerEdit_->setPlaceholderText("usuario...");
-  newChatButton_ = new QPushButton("+ Nuevo chat");
+  newChatPeerEdit_->setPlaceholderText(tr("usuario..."));
+  newChatButton_ = new QPushButton(tr("+ Nuevo chat"));
   newChatButton_->setObjectName("newChatButton");
 
   auto* newChatRow = new QHBoxLayout();
   newChatRow->addWidget(newChatPeerEdit_);
   newChatRow->addWidget(newChatButton_);
 
-  createGroupButton_ = new QPushButton("+ Nuevo grupo");
+  createGroupButton_ = new QPushButton(tr("+ Nuevo grupo"));
   createGroupButton_->setObjectName("createGroupButton");
 
   // Panel de invitaciones pendientes: nada de dialogo modal que pueda
   // interrumpir al usuario en mitad de otra cosa -- se queda aqui, en la
   // propia ventana, hasta que decida mirarlo. Oculto por defecto, solo se
   // muestra mientras inviteList_ tenga algo (ver updateInvitePanelVisibility).
-  inviteLabel_ = new QLabel("Invitaciones pendientes");
+  inviteLabel_ = new QLabel(tr("Invitaciones pendientes"));
   inviteLabel_->setObjectName("inviteLabel");
   inviteLabel_->setVisible(false);
   inviteList_ = new QListWidget();
   inviteList_->setObjectName("inviteList");
   inviteList_->setMaximumHeight(80);
   inviteList_->setVisible(false);
-  acceptInviteButton_ = new QPushButton("Aceptar");
+  acceptInviteButton_ = new QPushButton(tr("Aceptar"));
   acceptInviteButton_->setObjectName("acceptInviteButton");
   acceptInviteButton_->setVisible(false);
-  rejectInviteButton_ = new QPushButton("Rechazar");
+  rejectInviteButton_ = new QPushButton(tr("Rechazar"));
   rejectInviteButton_->setObjectName("rejectInviteButton");
   rejectInviteButton_->setVisible(false);
 
@@ -325,7 +326,7 @@ QWidget* MainWindow::buildChatPage() {
   inviteButtonsRow->addWidget(rejectInviteButton_);
 
   auto* sidebarLayout = new QVBoxLayout();
-  sidebarLayout->addWidget(new QLabel("Conversaciones"));
+  sidebarLayout->addWidget(new QLabel(tr("Conversaciones")));
   sidebarLayout->addWidget(conversationList_, /*stretch=*/1);
   sidebarLayout->addLayout(newChatRow);
   sidebarLayout->addWidget(createGroupButton_);
@@ -346,13 +347,13 @@ QWidget* MainWindow::buildChatPage() {
 
   searchEdit_ = new QLineEdit();
   searchEdit_->setObjectName("searchEdit");
-  searchEdit_->setPlaceholderText("Buscar en esta conversacion...");
+  searchEdit_->setPlaceholderText(tr("Buscar en esta conversacion..."));
   searchPrevButton_ = new QPushButton("↑");
   searchPrevButton_->setObjectName("searchPrevButton");
-  searchPrevButton_->setToolTip("Coincidencia anterior");
+  searchPrevButton_->setToolTip(tr("Coincidencia anterior"));
   searchNextButton_ = new QPushButton("↓");
   searchNextButton_->setObjectName("searchNextButton");
-  searchNextButton_->setToolTip("Coincidencia siguiente");
+  searchNextButton_->setToolTip(tr("Coincidencia siguiente"));
   searchCountLabel_ = new QLabel();
   searchCountLabel_->setObjectName("searchCountLabel");
   searchCloseButton_ = new QPushButton("✕");
@@ -372,13 +373,13 @@ QWidget* MainWindow::buildChatPage() {
   groupInfoLabel_ = new QLabel();
   groupInfoLabel_->setObjectName("groupInfoLabel");
   groupInfoLabel_->setVisible(false);
-  addMemberButton_ = new QPushButton("Anadir miembro...");
+  addMemberButton_ = new QPushButton(tr("Anadir miembro..."));
   addMemberButton_->setObjectName("addMemberButton");
   addMemberButton_->setVisible(false);
-  kickButton_ = new QPushButton("Expulsar...");
+  kickButton_ = new QPushButton(tr("Expulsar..."));
   kickButton_->setObjectName("kickButton");
   kickButton_->setVisible(false);
-  leaveGroupButton_ = new QPushButton("Salir del grupo");
+  leaveGroupButton_ = new QPushButton(tr("Salir del grupo"));
   leaveGroupButton_->setObjectName("leaveGroupButton");
   leaveGroupButton_->setVisible(false);
 
@@ -390,14 +391,14 @@ QWidget* MainWindow::buildChatPage() {
 
   messageEdit_ = new QLineEdit();
   messageEdit_->setObjectName("messageEdit");
-  messageEdit_->setPlaceholderText("mensaje...");
+  messageEdit_->setPlaceholderText(tr("mensaje..."));
   emojiButton_ = new QPushButton("😀");
   emojiButton_->setObjectName("emojiButton");
-  emojiButton_->setToolTip("Insertar emoji");
+  emojiButton_->setToolTip(tr("Insertar emoji"));
   attachButton_ = new QPushButton("📎");
   attachButton_->setObjectName("attachButton");
-  attachButton_->setToolTip("Enviar archivo");
-  sendButton_ = new QPushButton("Enviar");
+  attachButton_->setToolTip(tr("Enviar archivo"));
+  sendButton_ = new QPushButton(tr("Enviar"));
   sendButton_->setObjectName("sendButton");
 
   auto* sendRow = new QHBoxLayout();
@@ -468,7 +469,8 @@ QString MainWindow::formatLine(const ChatLine& line) const {
   switch (line.kind) {
     case LineKind::System:
       leftCell = timePrefix;
-      rightCell = "<i style='color:" + theme_.systemMessage.name() + ";'>[SISTEMA] " + body + "</i>";
+      rightCell =
+          "<i style='color:" + theme_.systemMessage.name() + ";'>[" + tr("SISTEMA") + "] " + body + "</i>";
       break;
     case LineKind::Own:
       leftCell = timePrefix + "<b style='color:" + theme_.ownMessage.name() + ";'>" +
@@ -499,7 +501,12 @@ bool MainWindow::sameLocalDay(qint64 epochSecsA, qint64 epochSecsB) {
 
 QString MainWindow::dateDividerHtml(qint64 epochSecs) const {
   QDate date = QDateTime::fromSecsSinceEpoch(epochSecs).date();
-  QString text = QLocale(QLocale::Spanish).toString(date, "d 'de' MMMM 'de' yyyy");
+  // El patron de fecha en si tambien depende del idioma (el espanol usa
+  // "d 'de' MMMM 'de' yyyy"; el ingles no tiene ese "de" -- se deja que
+  // QLocale::dateFormat() elija el patron correcto para cada idioma en vez
+  // de fijar uno solo).
+  QLocale locale = languageLocale(currentLanguage());
+  QString text = locale.toString(date, locale.dateFormat(QLocale::LongFormat));
   return "<div style='text-align:center; margin:6px 0; color:" + theme_.systemMessage.name() +
         ";'><i>" + text.toHtmlEscaped() + "</i></div>";
 }
@@ -539,6 +546,12 @@ void MainWindow::onSettingsClicked() {
     theme_ = dialog.resultTheme();
     theme_.save();
     applyTheme();
+
+    Language chosenLanguage = dialog.resultLanguage();
+    if (chosenLanguage != currentLanguage()) {
+      setLanguage(chosenLanguage);
+      logSystem(tr("Idioma cambiado. Reinicia Templar para que se aplique."));
+    }
   }
 }
 
@@ -666,8 +679,8 @@ std::optional<templar::crypto::X25519KeyPair> MainWindow::takeMatchingOneTimePre
     if (!secret || secret->size() != crypto_box_SECRETKEYBYTES ||
         usedOneTimePrekeyPub.size() != crypto_box_PUBLICKEYBYTES) {
       logSystem(
-          "Aviso: el remitente dice haber usado una one-time prekey que no tenemos en local "
-          "(almacen desincronizado) -- se cae a modo de 3-DH para este mensaje.");
+          tr("Aviso: el remitente dice haber usado una one-time prekey que no tenemos en local "
+             "(almacen desincronizado) -- se cae a modo de 3-DH para este mensaje."));
       return std::nullopt;
     }
     templar::crypto::X25519KeyPair kp{};
@@ -784,8 +797,7 @@ void MainWindow::updateSearchMatchCount() {
     ++count;
     from = idx + query.length();
   }
-  searchCountLabel_->setText(count > 0 ? QString("%1 resultado%2").arg(count).arg(count == 1 ? "" : "s")
-                                       : "sin resultados");
+  searchCountLabel_->setText(count > 0 ? tr("%n resultado(s)", "", count) : tr("sin resultados"));
 }
 
 void MainWindow::onSearchTextChanged(const QString& text) {
@@ -1011,7 +1023,7 @@ void MainWindow::updateGroupHeader() {
   }
 
   const GroupInfo& info = it->second;
-  groupInfoLabel_->setText(QString("Grupo: %1 miembro(s) -- admin: %2")
+  groupInfoLabel_->setText(tr("Grupo: %1 miembro(s) -- admin: %2")
                                .arg(info.members.size())
                                .arg(QString::fromStdString(info.adminUsername)));
   groupInfoLabel_->setVisible(true);
@@ -1068,7 +1080,7 @@ void MainWindow::onKickClicked() {
   if (candidates.isEmpty()) return;
 
   bool ok = false;
-  QString chosen = QInputDialog::getItem(this, "Expulsar miembro", "Elige a quien expulsar:",
+  QString chosen = QInputDialog::getItem(this, tr("Expulsar miembro"), tr("Elige a quien expulsar:"),
                                          candidates, 0, /*editable=*/false, &ok);
   if (!ok || chosen.isEmpty()) return;
 
@@ -1093,7 +1105,7 @@ void MainWindow::onLeaveGroupClicked() {
   // decide otra persona y por eso si hay que esperar su notificacion).
   groups_.erase(groupId);
   removeGroupFromSidebar(groupId);
-  logSystem("Has salido del grupo '" + name + "'.");
+  logSystem(tr("Has salido del grupo '%1'.").arg(name));
 }
 
 void MainWindow::onAddMemberClicked() {
@@ -1101,7 +1113,7 @@ void MainWindow::onAddMemberClicked() {
   if (it == groups_.end() || it->second.adminUsername != myUsername_) return;
 
   bool ok = false;
-  QString username = QInputDialog::getText(this, "Anadir miembro", "Usuario a invitar:",
+  QString username = QInputDialog::getText(this, tr("Anadir miembro"), tr("Usuario a invitar:"),
                                            QLineEdit::Normal, "", &ok)
                          .trimmed();
   if (!ok || username.isEmpty()) return;
@@ -1114,15 +1126,16 @@ void MainWindow::onAddMemberClicked() {
 
 void MainWindow::onGroupInviteReceived(uint32_t inviteId, const std::string& groupName,
                                        const std::string& inviter) {
-  auto* item = new QListWidgetItem(QString::fromStdString(groupName) + " (invitado por " +
-                                   QString::fromStdString(inviter) + ")");
+  auto* item = new QListWidgetItem(
+      tr("%1 (invitado por %2)")
+          .arg(QString::fromStdString(groupName), QString::fromStdString(inviter)));
   item->setData(Qt::UserRole, static_cast<qulonglong>(inviteId));
   inviteList_->addItem(item);
   updateInvitePanelVisibility();
 
-  logSystem(QString::fromStdString(inviter) + " te invito al grupo '" +
-           QString::fromStdString(groupName) +
-           "' -- puedes aceptarla o rechazarla en el panel de invitaciones de la barra lateral.");
+  logSystem(tr("%1 te invito al grupo '%2' -- puedes aceptarla o rechazarla en el panel de "
+               "invitaciones de la barra lateral.")
+                .arg(QString::fromStdString(inviter), QString::fromStdString(groupName)));
 }
 
 void MainWindow::respondToGroupInvite(uint32_t inviteId, bool accept) {
@@ -1191,7 +1204,7 @@ void MainWindow::insertEmoji(const QString& emoji) {
 void MainWindow::onAttachClicked() {
   if (!loggedIn_) return;
 
-  QString path = QFileDialog::getOpenFileName(this, "Selecciona un archivo para enviar");
+  QString path = QFileDialog::getOpenFileName(this, tr("Selecciona un archivo para enviar"));
   if (path.isEmpty()) return;
 
   startOutgoingFileTransfer(path);
@@ -1200,7 +1213,7 @@ void MainWindow::onAttachClicked() {
 void MainWindow::startOutgoingFileTransfer(const QString& path) {
   std::string peer = activeConversation_;
   if (peer.empty() || peer == kSystemKey) {
-    logSystem("Selecciona una conversacion antes de adjuntar un archivo.");
+    logSystem(tr("Selecciona una conversacion antes de adjuntar un archivo."));
     return;
   }
   if (peer == myUsername_) {
@@ -1209,8 +1222,9 @@ void MainWindow::startOutgoingFileTransfer(const QString& path) {
   }
   bool isGroup = groups_.count(peer) != 0;
   if (!isGroup && !crypto_.hasSession(peer)) {
-    logSystem("Manda primero un mensaje de texto a " + QString::fromStdString(peer) +
-             " para establecer la conversacion antes de enviar archivos.");
+    logSystem(tr("Manda primero un mensaje de texto a %1 para establecer la conversacion antes "
+                 "de enviar archivos.")
+                  .arg(QString::fromStdString(peer)));
     return;
   }
   // Ya no hace falta que el destinatario este en linea: el archivo se sube
@@ -1218,25 +1232,25 @@ void MainWindow::startOutgoingFileTransfer(const QString& path) {
   // por su canal cifrado -- ese si se pone en cola normal si esta
   // desconectado, igual que un mensaje de texto.
   if (outgoingTransfer_ || activeDownload_) {
-    logSystem("Ya hay una transferencia de archivo en curso, espera a que termine.");
+    logSystem(tr("Ya hay una transferencia de archivo en curso, espera a que termine."));
     return;
   }
 
   QFileInfo info(path);
   qint64 size = info.size();
   if (size <= 0) {
-    logSystem("No se pudo leer el archivo seleccionado.");
+    logSystem(tr("No se pudo leer el archivo seleccionado."));
     return;
   }
   if (static_cast<uint64_t>(size) > kMaxFileSize) {
-    logSystem(QString("El archivo supera el limite de %1 MB de esta version.")
+    logSystem(tr("El archivo supera el limite de %1 MB de esta version.")
                  .arg(kMaxFileSize / (1024 * 1024)));
     return;
   }
 
   auto file = std::make_unique<QFile>(path);
   if (!file->open(QIODevice::ReadOnly)) {
-    logSystem("No se pudo abrir el archivo seleccionado para leerlo.");
+    logSystem(tr("No se pudo abrir el archivo seleccionado para leerlo."));
     return;
   }
 
@@ -1255,7 +1269,7 @@ void MainWindow::startOutgoingFileTransfer(const QString& path) {
   w.str(outgoingTransfer_->filename.toStdString());
   net_.sendFrame(MsgType::UploadBlobBegin, w.take());
 
-  transferLabel_->setText("Subiendo: " + outgoingTransfer_->filename);
+  transferLabel_->setText(tr("Subiendo: %1").arg(outgoingTransfer_->filename));
   transferProgress_->setValue(0);
   transferLabel_->setVisible(true);
   transferProgress_->setVisible(true);
@@ -1266,7 +1280,7 @@ void MainWindow::startOutgoingFileTransfer(const QString& path) {
 void MainWindow::startSelfFileAttach(const QString& path) {
   QFileInfo info(path);
   if (!info.exists() || !info.isFile()) {
-    logSystem("No se pudo leer el archivo seleccionado.");
+    logSystem(tr("No se pudo leer el archivo seleccionado."));
     return;
   }
 
@@ -1279,7 +1293,7 @@ void MainWindow::startSelfFileAttach(const QString& path) {
   QString destPath = uniqueDownloadPath(destDir, info.fileName());
 
   if (!QFile::copy(path, destPath)) {
-    logSystem("No se pudo guardar una copia local del archivo.");
+    logSystem(tr("No se pudo guardar una copia local del archivo."));
     return;
   }
 
@@ -1348,7 +1362,7 @@ void MainWindow::sendBlobPointerAndFinish() {
     // subida ya se hizo UNA vez, esto solo manda un puntero pequeno por
     // miembro.
     logChat(t.peer, LineKind::Own, QString::fromStdString(myUsername_),
-           "Archivo enviado: " + t.filename);
+           tr("Archivo enviado: %1").arg(t.filename));
 
     std::vector<std::string> recipients;
     auto it = groups_.find(t.peer);
@@ -1363,14 +1377,14 @@ void MainWindow::sendBlobPointerAndFinish() {
     Bytes ciphertext = crypto_.encryptNext(t.peer, pointerPayload);
     sendEncryptedToServer(t.peer, ciphertext);
     logChat(t.peer, LineKind::Own, QString::fromStdString(myUsername_),
-           "Archivo enviado: " + t.filename);
+           tr("Archivo enviado: %1").arg(t.filename));
     trySaveSession(t.peer);
   } else {
     // Sesion perdida entre que se empezo la subida y que termino (raro,
     // pero posible si p.ej. se borro el almacen local a mitad) -- se
     // bootstrea igual que un mensaje de texto normal sin sesion.
     pendingOutbound_ =
-        PendingOutbound{t.peer, "", pointerPayload, "Archivo enviado: " + t.filename};
+        PendingOutbound{t.peer, "", pointerPayload, tr("Archivo enviado: %1").arg(t.filename)};
     Writer w;
     w.str(t.peer);
     net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
@@ -1383,8 +1397,8 @@ void MainWindow::onFileBlobPointerReceived(const std::string& originKey, const s
                                            const Bytes& fileHeader) {
   if (fileSize > kMaxFileSize || fileKey.size() != templar::crypto::kFileKeyBytes ||
       fileHeader.size() != templar::crypto::kFileHeaderBytes) {
-    logSystem("Se rechaza un puntero de archivo invalido de " + QString::fromStdString(sender) +
-             ".");
+    logSystem(tr("Se rechaza un puntero de archivo invalido de %1.")
+                  .arg(QString::fromStdString(sender)));
     return;
   }
 
@@ -1422,8 +1436,8 @@ void MainWindow::onFileBlobPointerReceived(const std::string& originKey, const s
   // ahora tambien se guarda (ver savePendingBlobDownload arriba), el
   // enlace SIGUE funcionando tras reiniciar la app, hasta que se descargue
   // o el blob caduque en el servidor (30 dias).
-  QString link = "<a href='templar-download:" + QString::fromStdString(blobId) + "'>⬇ Descargar " +
-                filename.toHtmlEscaped() + " (" + sizeText + ")</a>";
+  QString link = "<a href='templar-download:" + QString::fromStdString(blobId) + "'>⬇ " +
+                tr("Descargar") + " " + filename.toHtmlEscaped() + " (" + sizeText + ")</a>";
   logChat(originKey, LineKind::Peer, QString::fromStdString(sender), link, /*rawHtml=*/true);
   if (originKey != activeConversation_) markUnread(originKey);
 }
@@ -1431,11 +1445,11 @@ void MainWindow::onFileBlobPointerReceived(const std::string& originKey, const s
 void MainWindow::startBlobDownload(const std::string& blobId) {
   auto it = pendingBlobDownloads_.find(blobId);
   if (it == pendingBlobDownloads_.end()) {
-    logSystem("Ese enlace de descarga ya no esta disponible en esta sesion.");
+    logSystem(tr("Ese enlace de descarga ya no esta disponible en esta sesion."));
     return;
   }
   if (activeDownload_) {
-    logSystem("Ya hay una descarga en curso, espera a que termine.");
+    logSystem(tr("Ya hay una descarga en curso, espera a que termine."));
     return;
   }
 
@@ -1461,12 +1475,12 @@ void MainWindow::startBlobDownload(const std::string& blobId) {
   // "../../etc/passwd") -- nunca hay que confiar en el nombre que manda el
   // otro lado como una ruta real.
   QString safeName = QFileInfo(pending.filename).fileName();
-  if (safeName.isEmpty()) safeName = "archivo_recibido";
+  if (safeName.isEmpty()) safeName = tr("archivo_recibido");
   QString destPath = uniqueDownloadPath(downloadsDir, safeName);
 
   auto file = std::make_unique<QFile>(destPath);
   if (!file->open(QIODevice::WriteOnly)) {
-    logSystem("No se pudo crear el archivo de destino para la descarga.");
+    logSystem(tr("No se pudo crear el archivo de destino para la descarga."));
     return;
   }
 
@@ -1480,7 +1494,7 @@ void MainWindow::startBlobDownload(const std::string& blobId) {
   active.decryptor = std::make_unique<templar::crypto::FileDecryptor>(pending.key, pending.header);
   activeDownload_ = std::move(active);
 
-  transferLabel_->setText("Descargando: " + activeDownload_->filename);
+  transferLabel_->setText(tr("Descargando: %1").arg(activeDownload_->filename));
   transferProgress_->setValue(0);
   transferLabel_->setVisible(true);
   transferProgress_->setVisible(true);
@@ -1506,7 +1520,7 @@ void MainWindow::onBlobDataReceived(const std::string& blobId, const Bytes& chun
     transferProgress_->setValue(percent);
   } catch (const std::exception& e) {
     logChat(d.originKey, LineKind::Peer, QString::fromStdString(d.sender),
-           "[ALERTA] Fallo descifrando '" + d.filename + "': " + e.what());
+           tr("[ALERTA] Fallo descifrando '%1': %2").arg(d.filename, QString::fromUtf8(e.what())));
     activeDownload_.reset();
     transferProgress_->setVisible(false);
     transferLabel_->setVisible(false);
@@ -1526,11 +1540,12 @@ void MainWindow::onBlobEndReceived(const std::string& blobId) {
 
   if (d.finalTagSeen) {
     logChat(d.originKey, LineKind::Peer, QString::fromStdString(d.sender),
-           "Archivo '" + d.filename + "' recibido y verificado -> " + savedPath);
+           tr("Archivo '%1' recibido y verificado -> %2").arg(d.filename, savedPath));
   } else {
     logChat(d.originKey, LineKind::Peer, QString::fromStdString(d.sender),
-           "[ALERTA] El archivo '" + d.filename +
-               "' llego incompleto (se corto en transito) -- no te fies del contenido.");
+           tr("[ALERTA] El archivo '%1' llego incompleto (se corto en transito) -- no te fies "
+              "del contenido.")
+               .arg(d.filename));
   }
 }
 
@@ -1544,8 +1559,8 @@ void MainWindow::onBlobNotFound(const std::string& blobId, const std::string& re
   transferLabel_->setVisible(false);
 
   logChat(d.originKey, LineKind::Peer, QString::fromStdString(d.sender),
-         "[ALERTA] No se pudo descargar '" + d.filename +
-             "': " + QString::fromStdString(reason));
+         tr("[ALERTA] No se pudo descargar '%1': %2")
+             .arg(d.filename, QString::fromStdString(reason)));
 }
 
 void MainWindow::cancelActiveTransfers() {
@@ -1589,7 +1604,7 @@ void MainWindow::setLoggedInUiState(bool loggedIn) {
 
 void MainWindow::onConnectClicked() {
   setLoginError("");
-  statusLabel_->setText("Conectando...");
+  statusLabel_->setText(tr("Conectando..."));
   net_.connectToServer(hostEdit_->text(), static_cast<quint16>(portEdit_->text().toUInt()));
 }
 
@@ -1616,7 +1631,8 @@ void MainWindow::onRegisterClicked() {
   std::string username = usernameEdit_->text().toStdString();
   std::string password = passwordEdit_->text().toStdString();
   if (username.empty() || password.size() < 8) {
-    setLoginError("El usuario no puede estar vacio y la contrasena necesita al menos 8 caracteres.");
+    setLoginError(
+        tr("El usuario no puede estar vacio y la contrasena necesita al menos 8 caracteres."));
     return;
   }
   net_.sendFrame(MsgType::Register, buildRegisterPayload(username, password));
@@ -1678,16 +1694,17 @@ void MainWindow::onSendClicked() {
 
 void MainWindow::onNetConnected() {
   setConnectedUiState(true);
-  statusLabel_->setText("Conectado a " + hostEdit_->text() + ":" + portEdit_->text());
-  logSystem("Conectado a " + hostEdit_->text() + ":" + portEdit_->text());
+  QString endpoint = hostEdit_->text() + ":" + portEdit_->text();
+  statusLabel_->setText(tr("Conectado a %1").arg(endpoint));
+  logSystem(tr("Conectado a %1").arg(endpoint));
 }
 
 void MainWindow::onNetDisconnected() {
   loggedIn_ = false;
   setConnectedUiState(false);
   passwordEdit_->clear();
-  statusLabel_->setText("Desconectado.");
-  logSystem("Conexion cerrada.");
+  statusLabel_->setText(tr("Desconectado."));
+  logSystem(tr("Conexion cerrada."));
   cancelActiveTransfers();
   pendingBlobDownloads_.clear();
   localStore_.lock();
@@ -1695,8 +1712,8 @@ void MainWindow::onNetDisconnected() {
 }
 
 void MainWindow::onNetError(QString message) {
-  statusLabel_->setText("Error: " + message);
-  logSystem("Error de red: " + message);
+  statusLabel_->setText(tr("Error: %1").arg(message));
+  logSystem(tr("Error de red: %1").arg(message));
 }
 
 void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
@@ -1704,7 +1721,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
     switch (type) {
       case MsgType::RegisterOk: {
         setLoginError("");
-        logSystem("Registro exitoso. Ahora puedes iniciar sesion.");
+        logSystem(tr("Registro exitoso. Ahora puedes iniciar sesion."));
 
         // Una cuenta recien registrada NUNCA debe heredar el almacen local
         // de una cuenta anterior con el mismo nombre de usuario (p.ej. de
@@ -1733,7 +1750,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         Reader r(payload);
         QString reason = QString::fromStdString(r.str());
         setLoginError(reason);
-        logSystem("Error de registro: " + reason);
+        logSystem(tr("Error de registro: %1").arg(reason));
         break;
       }
       case MsgType::LoginOk: {
@@ -1741,15 +1758,15 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         loggedIn_ = true;
         myUsername_ = usernameEdit_->text().toStdString();
         setLoggedInUiState(true);
-        connectedAsLabel_->setText("Conectado como: " + QString::fromStdString(myUsername_));
-        logSystem("Sesion iniciada como " + usernameEdit_->text() + ".");
+        connectedAsLabel_->setText(tr("Conectado como: %1").arg(QString::fromStdString(myUsername_)));
+        logSystem(tr("Sesion iniciada como %1.").arg(usernameEdit_->text()));
         stack_->setCurrentWidget(chatPage_);
 
         // Se registra ANTES de loadHistoryFromStore() (mas abajo) para que
         // siempre quede como segunda entrada fija, justo despues de
         // "Sistema" -- ensureConversationListed no reordena nada despues
         // de la primera vez que se anade una clave.
-        ensureConversationListed(myUsername_, "Tú");
+        ensureConversationListed(myUsername_, tr("Tú"));
 
         UnlockResult unlockResult = localStore_.unlock(myUsername_, pendingLoginPassword_);
         pendingLoginPassword_.assign(pendingLoginPassword_.size(), '\0');
@@ -1757,8 +1774,8 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
 
         if (unlockResult == UnlockResult::WrongPassword) {
           logSystem(
-              "No se pudo desbloquear el almacen local (¿cambiaste la contrasena de cuenta "
-              "desde otro dispositivo?). Esta sesion no se guardara.");
+              tr("No se pudo desbloquear el almacen local (¿cambiaste la contrasena de cuenta "
+                 "desde otro dispositivo?). Esta sesion no se guardara."));
         } else if (unlockResult == UnlockResult::LoadedExisting) {
           // El login ya tuvo exito y la pantalla ya cambio a la de chat --
           // un problema al restaurar el almacen local (por ejemplo un
@@ -1796,9 +1813,10 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
             }
             loadHistoryFromStore();
             loadUnreadCountsFromStore();
-            logSystem("Almacen local desbloqueado: identidad, sesiones e historial restaurados.");
+            logSystem(tr("Almacen local desbloqueado: identidad, sesiones e historial restaurados."));
           } catch (const std::exception& e) {
-            logSystem(QString("No se pudo restaurar el almacen local por completo: ") + e.what());
+            logSystem(tr("No se pudo restaurar el almacen local por completo: %1")
+                          .arg(QString::fromUtf8(e.what())));
           }
         } else {  // CreatedNew
           PersistedIdentity toSave;
@@ -1815,7 +1833,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         Reader r(payload);
         QString reason = QString::fromStdString(r.str());
         setLoginError(reason);
-        logSystem("Error de inicio de sesion: " + reason);
+        logSystem(tr("Error de inicio de sesion: %1").arg(reason));
         break;
       }
       case MsgType::PrekeyBundle: {
@@ -1836,7 +1854,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
                       spk.size() == crypto_box_PUBLICKEYBYTES &&
                       (otpk.empty() || otpk.size() == crypto_box_PUBLICKEYBYTES);
         if (!sizesOk) {
-          logSystem("Bundle de prekeys con tamano invalido, se descarta.");
+          logSystem(tr("Bundle de prekeys con tamano invalido, se descarta."));
         } else {
           std::copy(idX.begin(), idX.end(), bundle.identityPkX25519);
           std::copy(idEd.begin(), idEd.end(), bundle.identityPkEd25519);
@@ -1847,8 +1865,9 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
           }
 
           if (!bundle.verify()) {
-            logSystem("El bundle de '" + QString::fromStdString(pending.peer) +
-                     "' tiene una firma invalida -- posible intermediario. Mensaje NO enviado.");
+            logSystem(tr("El bundle de '%1' tiene una firma invalida -- posible intermediario. "
+                         "Mensaje NO enviado.")
+                          .arg(QString::fromStdString(pending.peer)));
           } else {
             OutboundFirstMessage first = crypto_.encryptFirst(pending.peer, bundle, pending.payload);
 
@@ -1888,7 +1907,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
       }
       case MsgType::PrekeyBundleErr: {
         Reader r(payload);
-        logSystem("No se pudo iniciar conversacion: " + QString::fromStdString(r.str()));
+        logSystem(tr("No se pudo iniciar conversacion: %1").arg(QString::fromStdString(r.str())));
         bool wasGroupFanout = pendingOutbound_ && !pendingOutbound_->groupId.empty();
         pendingOutbound_.reset();
         if (wasGroupFanout) continueGroupFanout();
@@ -1903,7 +1922,8 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
       }
       case MsgType::UploadBlobBeginErr: {
         Reader r(payload);
-        logSystem("No se pudo empezar a subir el archivo: " + QString::fromStdString(r.str()));
+        logSystem(
+            tr("No se pudo empezar a subir el archivo: %1").arg(QString::fromStdString(r.str())));
         outgoingTransfer_.reset();
         transferLabel_->setVisible(false);
         transferProgress_->setVisible(false);
@@ -1914,7 +1934,8 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         break;
       case MsgType::UploadBlobEndErr: {
         Reader r(payload);
-        logSystem("Fallo terminando de subir el archivo: " + QString::fromStdString(r.str()));
+        logSystem(
+            tr("Fallo terminando de subir el archivo: %1").arg(QString::fromStdString(r.str())));
         outgoingTransfer_.reset();
         transferLabel_->setVisible(false);
         transferProgress_->setVisible(false);
@@ -1970,7 +1991,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
               // Contenido generico a proposito: el texto real no aparece en
               // la notificacion del sistema operativo (puede verse en la
               // pantalla de bloqueo o quedar en el historial).
-              trayIcon_->showMessage(QString::fromStdString(sender), "Nuevo mensaje",
+              trayIcon_->showMessage(QString::fromStdString(sender), tr("Nuevo mensaje"),
                                      QSystemTrayIcon::Information, 4000);
             }
             break;
@@ -1981,7 +2002,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
                                       QString::fromStdString(decoded.filename), decoded.fileSize,
                                       decoded.fileKey, decoded.fileHeader);
             if (trayIcon_ && shouldNotify()) {
-              trayIcon_->showMessage(QString::fromStdString(sender), "Nuevo archivo",
+              trayIcon_->showMessage(QString::fromStdString(sender), tr("Nuevo archivo"),
                                      QSystemTrayIcon::Information, 4000);
             }
             break;
@@ -2036,7 +2057,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         ensureConversationListed(groupId, QString::fromStdString(name));
         if (QListWidgetItem* item = findConversationItem(groupId)) item->setIcon(QIcon());
         selectConversation(groupId);
-        logSystem("Grupo '" + QString::fromStdString(name) + "' creado.");
+        logSystem(tr("Grupo '%1' creado.").arg(QString::fromStdString(name)));
 
         for (const std::string& invitee : pendingGroupInvitees_) {
           Writer w;
@@ -2069,7 +2090,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
           }
           if (username != myUsername_) {
             logChat(groupId, LineKind::System, QString(),
-                   QString::fromStdString(username) + " se unio al grupo.");
+                   tr("%1 se unio al grupo.").arg(QString::fromStdString(username)));
           }
           if (groupId == activeConversation_) updateGroupHeader();
         }
@@ -2083,14 +2104,14 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         if (username == myUsername_) {
           groups_.erase(groupId);
           removeGroupFromSidebar(groupId);
-          logSystem("Has sido expulsado de un grupo.");
+          logSystem(tr("Has sido expulsado de un grupo."));
         } else {
           auto it = groups_.find(groupId);
           if (it != groups_.end()) {
             auto& members = it->second.members;
             members.erase(std::remove(members.begin(), members.end(), username), members.end());
             logChat(groupId, LineKind::System, QString(),
-                   QString::fromStdString(username) + " fue expulsado del grupo.");
+                   tr("%1 fue expulsado del grupo.").arg(QString::fromStdString(username)));
             if (groupId == activeConversation_) updateGroupHeader();
           }
         }
@@ -2111,7 +2132,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
           members.erase(std::remove(members.begin(), members.end(), username), members.end());
           it->second.adminUsername = currentAdmin;
           logChat(groupId, LineKind::System, QString(),
-                 QString::fromStdString(username) + " salio del grupo.");
+                 tr("%1 salio del grupo.").arg(QString::fromStdString(username)));
           if (groupId == activeConversation_) updateGroupHeader();
         }
         break;
@@ -2144,7 +2165,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
           if (groupId != activeConversation_) markUnread(groupId);
           if (trayIcon_ && shouldNotify()) {
             trayIcon_->showMessage(displayLabelFor(groupId),
-                                   "Nuevo mensaje de " + QString::fromStdString(sender),
+                                   tr("Nuevo mensaje de %1").arg(QString::fromStdString(sender)),
                                    QSystemTrayIcon::Information, 4000);
           }
         } else if (decoded.kind == PayloadKind::FileBlobPointer) {
@@ -2153,7 +2174,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
                                     decoded.fileKey, decoded.fileHeader);
           if (trayIcon_ && shouldNotify()) {
             trayIcon_->showMessage(displayLabelFor(groupId),
-                                   "Nuevo archivo de " + QString::fromStdString(sender),
+                                   tr("Nuevo archivo de %1").arg(QString::fromStdString(sender)),
                                    QSystemTrayIcon::Information, 4000);
           }
         }
@@ -2212,14 +2233,15 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         Reader r(payload);
         std::string context = r.str();
         QString message = QString::fromStdString(r.str());
-        logSystem("Error de grupo (" + QString::fromStdString(context) + "): " + message);
+        logSystem(
+            tr("Error de grupo (%1): %2").arg(QString::fromStdString(context), message));
         break;
       }
       default:
         break;
     }
   } catch (const std::exception& e) {
-    logSystem(QString("Error procesando mensaje del servidor: ") + e.what());
+    logSystem(tr("Error procesando mensaje del servidor: %1").arg(QString::fromUtf8(e.what())));
   }
 }
 

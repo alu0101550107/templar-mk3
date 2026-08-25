@@ -20,7 +20,7 @@ Dialog {
     }
 
     header: Label {
-        text: "Nuevo chat"
+        text: qsTr("Nuevo chat")
         color: theme.accent
         font.bold: true
         font.family: "JetBrains Mono"
@@ -32,13 +32,13 @@ Dialog {
         spacing: 8
 
         TemplarButton {
-            text: "Cancelar"
+            text: qsTr("Cancelar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.reject()
         }
         TemplarButton {
-            text: "Crear"
+            text: qsTr("Crear")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.accept()
@@ -60,7 +60,7 @@ Dialog {
 
         TemplarTextField {
             id: usernameField
-            placeholderText: "Usuario"
+            placeholderText: qsTr("Usuario")
             Layout.fillWidth: true
             onAccepted: dialog.accept()
         }

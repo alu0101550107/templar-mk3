@@ -24,7 +24,7 @@ Dialog {
     }
 
     header: Label {
-        text: "Expulsar miembro"
+        text: qsTr("Expulsar miembro")
         color: theme.accent
         font.bold: true
         font.family: "JetBrains Mono"
@@ -36,13 +36,13 @@ Dialog {
         spacing: 8
 
         TemplarButton {
-            text: "Cancelar"
+            text: qsTr("Cancelar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.reject()
         }
         TemplarButton {
-            text: "Expulsar"
+            text: qsTr("Expulsar")
             Layout.fillWidth: true
             Layout.margins: 8
             enabled: dialog.selectedUsername.length > 0
@@ -88,7 +88,7 @@ Dialog {
         }
 
         Label {
-            text: "(no hay otros miembros que expulsar)"
+            text: qsTr("(no hay otros miembros que expulsar)")
             color: "#666666"
             font.pixelSize: 11
             wrapMode: Text.WordWrap

@@ -144,7 +144,7 @@ Page {
 
     FileDialog {
         id: fileDialog
-        title: "Selecciona un archivo para enviar"
+        title: qsTr("Selecciona un archivo para enviar")
         onAccepted: controller.sendFile(page.peerKey, selectedFile)
     }
 
@@ -235,7 +235,7 @@ Page {
                 // A diferencia de +/- (solo admin), salir del grupo lo
                 // puede hacer cualquier miembro -- mismo criterio que
                 // leaveGroupButton_ en el escritorio.
-                text: "Salir"
+                text: qsTr("Salir")
                 font.pixelSize: 11
                 visible: page.isGroup
                 onClicked: {
@@ -277,14 +277,14 @@ Page {
             TemplarTextField {
                 id: searchField
                 Layout.fillWidth: true
-                placeholderText: "Buscar en esta conversacion..."
+                placeholderText: qsTr("Buscar en esta conversacion...")
                 onTextChanged: page.runSearch(text)
                 onAccepted: page.searchNext()
             }
             Label {
                 text: page.searchMatches.length > 0
                     ? (page.searchMatchPos + 1) + "/" + page.searchMatches.length
-                    : (searchField.text.length > 0 ? "sin resultados" : "")
+                    : (searchField.text.length > 0 ? qsTr("sin resultados") : "")
                 color: theme.systemMessage
                 font.pixelSize: 11
             }
@@ -441,7 +441,7 @@ Page {
                     var leftCell, rightCell
                     if (model.kind === 0) {
                         leftCell = prefix
-                        rightCell = "<i style='color:" + theme.systemMessage + ";'>[SISTEMA] " + body + "</i>"
+                        rightCell = "<i style='color:" + theme.systemMessage + ";'>[" + qsTr("SISTEMA") + "] " + body + "</i>"
                     } else {
                         var nameColor = model.kind === 1 ? theme.ownMessage : theme.peerMessage
                         leftCell = prefix + "<b style='color:" + nameColor + ";'>" + who + ":</b>"
@@ -485,7 +485,7 @@ Page {
 
             TemplarTextField {
                 id: messageField
-                placeholderText: "Mensaje..."
+                placeholderText: qsTr("Mensaje...")
                 Layout.fillWidth: true
                 onAccepted: page.sendCurrentMessage()
             }
@@ -505,7 +505,7 @@ Page {
                 onClicked: controller.capturePhoto(page.peerKey)
             }
             TemplarButton {
-                text: "Enviar"
+                text: qsTr("Enviar")
                 onClicked: page.sendCurrentMessage()
             }
         }

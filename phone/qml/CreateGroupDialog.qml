@@ -22,7 +22,7 @@ Dialog {
     }
 
     header: Label {
-        text: "Nuevo grupo"
+        text: qsTr("Nuevo grupo")
         color: theme.accent
         font.bold: true
         font.family: "JetBrains Mono"
@@ -34,13 +34,13 @@ Dialog {
         spacing: 8
 
         TemplarButton {
-            text: "Cancelar"
+            text: qsTr("Cancelar")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.reject()
         }
         TemplarButton {
-            text: "Crear"
+            text: qsTr("Crear")
             Layout.fillWidth: true
             Layout.margins: 8
             onClicked: dialog.accept()
@@ -65,12 +65,12 @@ Dialog {
 
         TemplarTextField {
             id: nameField
-            placeholderText: "Nombre del grupo"
+            placeholderText: qsTr("Nombre del grupo")
             Layout.fillWidth: true
         }
 
         Label {
-            text: "Invitar (opcional):"
+            text: qsTr("Invitar (opcional):")
             color: theme.foreground
             Layout.topMargin: 4
         }
@@ -107,7 +107,7 @@ Dialog {
             }
 
             Label {
-                text: "(todavia no tienes ningun chat 1-a-1 a quien invitar)"
+                text: qsTr("(todavia no tienes ningun chat 1-a-1 a quien invitar)")
                 color: "#666666"
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap

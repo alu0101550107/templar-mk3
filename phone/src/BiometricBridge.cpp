@@ -61,7 +61,7 @@ void BiometricBridge::enable(const QString& password) {
                                       jPassword.object());
 #else
   Q_UNUSED(password);
-  emit enableFinished(false, QStringLiteral("No disponible fuera de Android"));
+  emit enableFinished(false, tr("No disponible fuera de Android"));
 #endif
 }
 
@@ -70,7 +70,7 @@ void BiometricBridge::unlock() {
   QJniObject::callStaticMethod<void>(kHelperClass, "unlock", "(Landroid/content/Context;)V",
                                       QNativeInterface::QAndroidApplication::context());
 #else
-  emit unlockFinished(false, QString(), QStringLiteral("No disponible fuera de Android"));
+  emit unlockFinished(false, QString(), tr("No disponible fuera de Android"));
 #endif
 }
 

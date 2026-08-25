@@ -1,7 +1,9 @@
 #include <QApplication>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QTranslator>
 
+#include "Language.hpp"
 #include "MainWindow.hpp"
 #include "templar/crypto/Identity.hpp"
 
@@ -11,6 +13,17 @@ int main(int argc, char* argv[]) {
   QApplication app(argc, argv);
   QApplication::setOrganizationName("Templar");
   QApplication::setApplicationName("templar_client");
+
+  // El codigo fuente (tr()) esta escrito en espanol, asi que ese idioma no
+  // necesita ningun traductor instalado -- solo se carga uno para otro
+  // idioma distinto (ver Language.hpp). El objeto vive en el scope de main()
+  // para que no se destruya mientras dure app.exec().
+  QTranslator translator;
+  templar::Language language = templar::currentLanguage();
+  if (language != templar::Language::Spanish &&
+      translator.load(QStringLiteral(":/i18n/templar_%1.qm").arg(templar::languageCode(language)))) {
+    QApplication::installTranslator(&translator);
+  }
   // Icono de la propia ventana/app -- sin esto, el gestor de ventanas usa un
   // icono generico (el interrogante) en la barra de tareas y el alt-tab, aun
   // cuando la bandeja del sistema ya muestre el icono correcto.

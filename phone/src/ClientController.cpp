@@ -78,7 +78,7 @@ ClientController::ClientController(QObject* parent) : QObject(parent) {
   // Se registra ya desde el arranque (no hace falta esperar al login) --
   // igual que "Sistema" en el escritorio, para que los mensajes de antes
   // de iniciar sesion (p.ej. errores de conexion) tengan donde aparecer.
-  conversations_.upsert(QString::fromLatin1(kSystemKey), "Sistema", false);
+  conversations_.upsert(QString::fromLatin1(kSystemKey), tr("Sistema"), false);
   // "Sistema" no es un peer de verdad, no tiene un estado online/offline
   // que mostrar -- a diferencia del escritorio (que directamente no le
   // pone icono, ver MainWindow::ensureConversationListed), aqui el punto
@@ -169,12 +169,13 @@ void ClientController::capturePhoto(const QString& peerKey) {
   bool isSelf = peerKey.toStdString() == myUsername_;
   if (!isSelf && !conversations_.isGroupChat(peerKey) &&
       !crypto_.hasSession(peerKey.toStdString())) {
-    setErrorText("Manda primero un mensaje de texto a " + peerKey +
-                 " para establecer la conversacion antes de enviar archivos.");
+    setErrorText(tr("Manda primero un mensaje de texto a %1 para establecer la conversacion "
+                    "antes de enviar archivos.")
+                     .arg(peerKey));
     return;
   }
   if (outgoingTransfer_ || activeDownload_) {
-    setErrorText("Ya hay una transferencia de archivo en curso, espera a que termine.");
+    setErrorText(tr("Ya hay una transferencia de archivo en curso, espera a que termine."));
     return;
   }
 
@@ -367,7 +368,7 @@ void ClientController::connectToServer(const QString& hostAndPort) {
   }
 
   setServerAddress(host + ":" + QString::number(port));
-  setStatusText("Conectando...");
+  setStatusText(tr("Conectando..."));
   net_.connectToServer(host, port);
 
   QSettings settings;
@@ -739,12 +740,13 @@ void ClientController::sendFile(const QString& peerKey, const QUrl& fileUrl) {
   }
   bool isGroup = conversations_.isGroupChat(peerKey);
   if (!isGroup && !crypto_.hasSession(peer)) {
-    setErrorText("Manda primero un mensaje de texto a " + peerKey +
-                 " para establecer la conversacion antes de enviar archivos.");
+    setErrorText(tr("Manda primero un mensaje de texto a %1 para establecer la conversacion "
+                    "antes de enviar archivos.")
+                     .arg(peerKey));
     return;
   }
   if (outgoingTransfer_ || activeDownload_) {
-    setErrorText("Ya hay una transferencia de archivo en curso, espera a que termine.");
+    setErrorText(tr("Ya hay una transferencia de archivo en curso, espera a que termine."));
     return;
   }
 
@@ -756,12 +758,12 @@ void ClientController::sendFile(const QString& peerKey, const QUrl& fileUrl) {
                                                              : fileUrl.toString());
   qint64 size = file->size();
   if (size <= 0 || !file->open(QIODevice::ReadOnly)) {
-    setErrorText("No se pudo abrir el archivo seleccionado para leerlo.");
+    setErrorText(tr("No se pudo abrir el archivo seleccionado para leerlo."));
     return;
   }
   if (static_cast<quint64>(size) > kMaxFileSize) {
     setErrorText(
-        QString("El archivo supera el limite de %1 MB de esta version.").arg(kMaxFileSize / (1024 * 1024)));
+        tr("El archivo supera el limite de %1 MB de esta version.").arg(kMaxFileSize / (1024 * 1024)));
     return;
   }
 
@@ -769,7 +771,7 @@ void ClientController::sendFile(const QString& peerKey, const QUrl& fileUrl) {
   transfer.peer = peer;
   transfer.isGroup = isGroup;
   transfer.filename = resolveOriginalFilename(fileUrl);
-  if (transfer.filename.isEmpty()) transfer.filename = "archivo_enviado";
+  if (transfer.filename.isEmpty()) transfer.filename = tr("archivo_enviado");
   transfer.totalSize = static_cast<quint64>(size);
   transfer.file = std::move(file);
   transfer.key = templar::crypto::generateFileKey();
@@ -781,7 +783,7 @@ void ClientController::sendFile(const QString& peerKey, const QUrl& fileUrl) {
   w.str(outgoingTransfer_->filename.toStdString());
   net_.sendFrame(MsgType::UploadBlobBegin, w.take());
 
-  setFileTransferStatus("Subiendo: " + outgoingTransfer_->filename);
+  setFileTransferStatus(tr("Subiendo: %1").arg(outgoingTransfer_->filename));
   setFileTransferProgress(0.0);
   // fileSendTimer_ arranca al llegar UploadBlobBeginOk con el blobId (ver
   // onFrameReceived).
@@ -791,7 +793,7 @@ void ClientController::startSelfFileAttach(const QUrl& fileUrl) {
   QString sourcePath = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
   QFile sourceFile(sourcePath);
   if (!sourceFile.exists()) {
-    setErrorText("No se pudo leer el archivo seleccionado.");
+    setErrorText(tr("No se pudo leer el archivo seleccionado."));
     return;
   }
 
@@ -804,11 +806,11 @@ void ClientController::startSelfFileAttach(const QUrl& fileUrl) {
       QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/mis_archivos";
   QDir().mkpath(destDir);
   QString filename = resolveOriginalFilename(fileUrl);
-  if (filename.isEmpty()) filename = "archivo";
+  if (filename.isEmpty()) filename = tr("archivo");
   QString destPath = uniqueDownloadPath(destDir, filename);
 
   if (!sourceFile.copy(destPath)) {
-    setErrorText("No se pudo guardar una copia local del archivo.");
+    setErrorText(tr("No se pudo guardar una copia local del archivo."));
     return;
   }
 
@@ -842,7 +844,7 @@ void ClientController::openSelfFile(const QString& path) {
       jAuthority.object<jstring>(), jPath.object<jstring>());
 #else
   if (!QDesktopServices::openUrl(QUrl::fromLocalFile(path))) {
-    setErrorText("No se pudo abrir el archivo: " + path);
+    setErrorText(tr("No se pudo abrir el archivo: ") + path);
   }
 #endif
 }
@@ -900,7 +902,7 @@ void ClientController::sendBlobPointerAndFinish() {
     // Mismo mecanismo de fan-out que un mensaje de texto de grupo -- la
     // subida ya se hizo UNA vez, esto solo manda un puntero pequeno por
     // miembro.
-    logChat(t.peer, /*Own=*/1, username(), "Archivo enviado: " + t.filename);
+    logChat(t.peer, /*Own=*/1, username(), tr("Archivo enviado: %1").arg(t.filename));
 
     QStringList qMembers = conversations_.membersOf(QString::fromStdString(t.peer));
     std::vector<std::string> recipients;
@@ -912,7 +914,7 @@ void ClientController::sendBlobPointerAndFinish() {
   } else if (crypto_.hasSession(t.peer)) {
     Bytes ciphertext = crypto_.encryptNext(t.peer, pointerPayload);
     sendEncryptedToServer(t.peer, ciphertext);
-    logChat(t.peer, /*Own=*/1, username(), "Archivo enviado: " + t.filename);
+    logChat(t.peer, /*Own=*/1, username(), tr("Archivo enviado: %1").arg(t.filename));
     trySaveSession(t.peer);
   } else {
     // Sesion perdida entre que se empezo la subida y que termino (raro,
@@ -921,7 +923,7 @@ void ClientController::sendBlobPointerAndFinish() {
     pendingOutboundPeer_ = t.peer;
     pendingOutboundPayload_ = pointerPayload;
     pendingOutboundGroupId_.clear();
-    pendingOutboundOwnLineText_ = "Archivo enviado: " + t.filename;
+    pendingOutboundOwnLineText_ = tr("Archivo enviado: %1").arg(t.filename);
     Writer w;
     w.str(t.peer);
     net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
@@ -935,8 +937,8 @@ void ClientController::onFileBlobPointerReceived(const std::string& originKey,
                                                   const Bytes& fileKey, const Bytes& fileHeader) {
   if (fileSize > kMaxFileSize || fileKey.size() != templar::crypto::kFileKeyBytes ||
       fileHeader.size() != templar::crypto::kFileHeaderBytes) {
-    setErrorText("Se rechaza un puntero de archivo invalido de " + QString::fromStdString(sender) +
-                ".");
+    setErrorText(tr("Se rechaza un puntero de archivo invalido de %1.")
+                     .arg(QString::fromStdString(sender)));
     return;
   }
 
@@ -974,8 +976,8 @@ void ClientController::onFileBlobPointerReceived(const std::string& originKey,
   // este mismo enlace (no un texto de repuesto): como la clave tambien se
   // guarda arriba, sigue funcionando tras reiniciar la app, hasta que se
   // descargue o el blob caduque en el servidor (30 dias).
-  QString link = "<a href='templar-download:" + QString::fromStdString(blobId) + "'>⬇ Descargar " +
-                filename.toHtmlEscaped() + " (" + sizeText + ")</a>";
+  QString link = "<a href='templar-download:" + QString::fromStdString(blobId) + "'>⬇ " +
+                tr("Descargar") + " " + filename.toHtmlEscaped() + " (" + sizeText + ")</a>";
   logChat(originKey, /*Peer=*/2, QString::fromStdString(sender), link, /*rawHtml=*/true);
   if (originKey != activeConversationKey_.toStdString()) markUnread(originKey);
 }
@@ -984,11 +986,11 @@ void ClientController::startBlobDownload(const QString& blobIdQ) {
   std::string blobId = blobIdQ.toStdString();
   auto it = pendingBlobDownloads_.find(blobId);
   if (it == pendingBlobDownloads_.end()) {
-    setErrorText("Ese enlace de descarga ya no esta disponible en esta sesion.");
+    setErrorText(tr("Ese enlace de descarga ya no esta disponible en esta sesion."));
     return;
   }
   if (activeDownload_) {
-    setErrorText("Ya hay una descarga en curso, espera a que termine.");
+    setErrorText(tr("Ya hay una descarga en curso, espera a que termine."));
     return;
   }
 
@@ -1009,7 +1011,7 @@ void ClientController::startBlobDownload(const QString& blobIdQ) {
   // "../../etc/passwd") -- nunca hay que confiar en el nombre que manda el
   // otro lado como una ruta real.
   QString safeName = QFileInfo(pending.filename).fileName();
-  if (safeName.isEmpty()) safeName = "archivo_recibido";
+  if (safeName.isEmpty()) safeName = tr("archivo_recibido");
 
   auto file = std::make_unique<QFile>();
   bool usesMediaStore = false;
@@ -1038,7 +1040,7 @@ void ClientController::startBlobDownload(const QString& blobIdQ) {
     QString destPath = uniqueDownloadPath(downloadsDir, safeName);
     file->setFileName(destPath);
     if (!file->open(QIODevice::WriteOnly)) {
-      setErrorText("No se pudo crear el archivo de destino para la descarga.");
+      setErrorText(tr("No se pudo crear el archivo de destino para la descarga."));
       return;
     }
     displayName = QFileInfo(destPath).fileName();
@@ -1055,7 +1057,7 @@ void ClientController::startBlobDownload(const QString& blobIdQ) {
   active.decryptor = std::make_unique<templar::crypto::FileDecryptor>(pending.key, pending.header);
   activeDownload_ = std::move(active);
 
-  setFileTransferStatus("Descargando: " + activeDownload_->filename);
+  setFileTransferStatus(tr("Descargando: %1").arg(activeDownload_->filename));
   setFileTransferProgress(0.0);
 
   Writer w;
@@ -1079,7 +1081,7 @@ void ClientController::onBlobDataReceived(const std::string& blobId, const Bytes
                                             : 1.0);
   } catch (const std::exception& e) {
     logChat(d.originKey, /*Peer=*/2, QString::fromStdString(d.sender),
-           QString("[ALERTA] Fallo descifrando '") + d.filename + "': " + e.what());
+           tr("[ALERTA] Fallo descifrando '%1': %2").arg(d.filename, QString::fromUtf8(e.what())));
 #ifdef Q_OS_ANDROID
     // Mismo criterio que el fichero privado de siempre: lo ya escrito se
     // queda (solo se avisa), no se borra por un fallo de descifrado a
@@ -1109,15 +1111,16 @@ void ClientController::onBlobEndReceived(const std::string& blobId) {
   // content:// interno, no de una ruta de fichero) -- se describe el
   // destino en palabras en su lugar.
   QString location =
-      d.usesMediaStore ? (isImageFilename(d.filename) ? "Galeria" : "Descargas") : savedPath;
+      d.usesMediaStore ? (isImageFilename(d.filename) ? tr("Galeria") : tr("Descargas")) : savedPath;
 
   if (d.finalTagSeen) {
     logChat(d.originKey, /*Peer=*/2, QString::fromStdString(d.sender),
-           "Archivo '" + d.filename + "' recibido y verificado -> " + location);
+           tr("Archivo '%1' recibido y verificado -> %2").arg(d.filename, location));
   } else {
     logChat(d.originKey, /*Peer=*/2, QString::fromStdString(d.sender),
-           "[ALERTA] El archivo '" + d.filename +
-               "' llego incompleto (se corto en transito) -- no te fies del contenido.");
+           tr("[ALERTA] El archivo '%1' llego incompleto (se corto en transito) -- no te fies "
+              "del contenido.")
+               .arg(d.filename));
   }
 }
 
@@ -1139,7 +1142,7 @@ void ClientController::onBlobNotFound(const std::string& blobId, const QString& 
   setFileTransferStatus("");
 
   logChat(d.originKey, /*Peer=*/2, QString::fromStdString(d.sender),
-         "[ALERTA] No se pudo descargar '" + d.filename + "': " + reason);
+         tr("[ALERTA] No se pudo descargar '%1': %2").arg(d.filename, reason));
 }
 
 void ClientController::cancelActiveTransfers() {
@@ -1175,7 +1178,7 @@ void ClientController::registerAccount(const QString& username, const QString& p
   setErrorText("");
   if (username.isEmpty() || password.size() < 8) {
     setErrorText(
-        "El usuario no puede estar vacio y la contrasena necesita al menos 8 caracteres.");
+        tr("El usuario no puede estar vacio y la contrasena necesita al menos 8 caracteres."));
     return;
   }
   pendingUsername_ = username.toStdString();
@@ -1198,15 +1201,15 @@ void ClientController::login(const QString& username, const QString& password) {
 
 void ClientController::onNetConnected() {
   setConnected(true);
-  setStatusText("Conectado.");
-  logSystem("Conectado.");
+  setStatusText(tr("Conectado."));
+  logSystem(tr("Conectado."));
   startBackgroundConnectionService();
 }
 
 void ClientController::onNetDisconnected() {
   setConnected(false);
   setLoggedIn(false);
-  setStatusText("Desconectado");
+  setStatusText(tr("Desconectado"));
   setUsername("");
   localStore_.lock();
   stopBackgroundConnectionService();
@@ -1227,9 +1230,9 @@ void ClientController::onNetDisconnected() {
   // instante) -- a cambio, como el almacen local ya esta bloqueado en
   // este punto, este aviso concreto no sobrevive a un reinicio (aceptable
   // para una notificacion de "se corto la conexion").
-  conversations_.upsert(QString::fromLatin1(kSystemKey), "Sistema", false);
+  conversations_.upsert(QString::fromLatin1(kSystemKey), tr("Sistema"), false);
   conversations_.setOnline(QString::fromLatin1(kSystemKey), true);
-  logSystem("Conexion cerrada.");
+  logSystem(tr("Conexion cerrada."));
   knownGroupKeys_.clear();
   history_.setLines({});
   activeConversationKey_.clear();
@@ -1248,7 +1251,7 @@ void ClientController::onNetDisconnected() {
 
 void ClientController::onNetError(const QString& message) {
   setErrorText(message);
-  logSystem("Error de red: " + message);
+  logSystem(tr("Error de red: %1").arg(message));
 }
 
 void ClientController::onFrameReceived(MsgType type, Bytes payload) {
@@ -1256,8 +1259,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
     switch (type) {
       case MsgType::RegisterOk: {
         setErrorText("");
-        setStatusText("Registro exitoso. Ya puedes iniciar sesion.");
-        logSystem("Registro exitoso como " + QString::fromStdString(pendingUsername_) + ".");
+        setStatusText(tr("Registro exitoso. Ya puedes iniciar sesion."));
+        logSystem(tr("Registro exitoso como %1.").arg(QString::fromStdString(pendingUsername_)));
 
         // Una cuenta recien registrada NUNCA debe heredar el almacen local
         // de una cuenta anterior con el mismo nombre de usuario -- ver el
@@ -1282,20 +1285,20 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         Reader r(payload);
         QString reason = QString::fromStdString(r.str());
         setErrorText(reason);
-        logSystem("Error de registro: " + reason);
+        logSystem(tr("Error de registro: %1").arg(reason));
         break;
       }
       case MsgType::LoginOk: {
         setUsername(pendingUsername_);
         setErrorText("");
         setLoggedIn(true);
-        logSystem("Sesion iniciada como " + QString::fromStdString(myUsername_) + ".");
+        logSystem(tr("Sesion iniciada como %1.").arg(QString::fromStdString(myUsername_)));
 
         // Se registra ANTES de loadHistoryFromStore() (mas abajo) para que
         // siempre quede como segunda entrada fija, justo despues de
         // "Sistema" -- upsert no reordena nada despues de la primera vez
         // que se anade una clave.
-        conversations_.upsert(QString::fromStdString(myUsername_), "Tú", false);
+        conversations_.upsert(QString::fromStdString(myUsername_), tr("Tú"), false);
         // Siempre "en linea" -- eres tu mismo, mismo criterio de
         // simplicidad que kSystemKey de arriba.
         conversations_.setOnline(QString::fromStdString(myUsername_), true);
@@ -1306,8 +1309,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
 
         if (unlockResult == UnlockResult::WrongPassword) {
           QString msg =
-              "Sesion iniciada, pero no se pudo desbloquear el almacen local (¿cambiaste la "
-              "contrasena desde otro dispositivo?).";
+              tr("Sesion iniciada, pero no se pudo desbloquear el almacen local (¿cambiaste la "
+                 "contrasena desde otro dispositivo?).");
           setStatusText(msg);
           logSystem(msg);
         } else if (unlockResult == UnlockResult::LoadedExisting) {
@@ -1349,12 +1352,12 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
               conversations_.setUnreadCount(QString::fromStdString(key), count);
             }
 
-            setStatusText("Conectado como " + QString::fromStdString(myUsername_) +
-                          " (almacen local restaurado).");
-            logSystem("Almacen local desbloqueado: identidad, sesiones e historial restaurados.");
+            setStatusText(tr("Conectado como %1 (almacen local restaurado).")
+                              .arg(QString::fromStdString(myUsername_)));
+            logSystem(tr("Almacen local desbloqueado: identidad, sesiones e historial restaurados."));
           } catch (const std::exception& e) {
-            QString msg = QString("Sesion iniciada, pero fallo restaurando el almacen local: ") +
-                          e.what();
+            QString msg = tr("Sesion iniciada, pero fallo restaurando el almacen local: %1")
+                              .arg(QString::fromUtf8(e.what()));
             setStatusText(msg);
             logSystem(msg);
           }
@@ -1365,7 +1368,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
           toSave.signedPrekey = crypto_.signedPrekey();
           toSave.signedPrekeySig = crypto_.signedPrekeySignature();
           localStore_.saveIdentity(toSave);
-          setStatusText("Conectado como " + QString::fromStdString(myUsername_) + ".");
+          setStatusText(tr("Conectado como %1.").arg(QString::fromStdString(myUsername_)));
         }
         ensureOneTimePrekeys();
 
@@ -1376,7 +1379,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         Reader r(payload);
         QString reason = QString::fromStdString(r.str());
         setErrorText(reason);
-        logSystem("Error de inicio de sesion: " + reason);
+        logSystem(tr("Error de inicio de sesion: %1").arg(reason));
         break;
       }
       case MsgType::PresenceUpdate: {
@@ -1511,7 +1514,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         // hasta el continueGroupFanout() de mas abajo, en vez de salir del
         // case a mitad camino.
         if (!sizesOk) {
-          setErrorText("Bundle de prekeys con tamano invalido, se descarta.");
+          setErrorText(tr("Bundle de prekeys con tamano invalido, se descarta."));
         } else {
           std::copy(idX.begin(), idX.end(), bundle.identityPkX25519);
           std::copy(idEd.begin(), idEd.end(), bundle.identityPkEd25519);
@@ -1522,9 +1525,9 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
           }
 
           if (!bundle.verify()) {
-            setErrorText(
-                "El bundle de '" + QString::fromStdString(peer) +
-                "' tiene una firma invalida -- posible intermediario. Mensaje NO enviado.");
+            setErrorText(tr("El bundle de '%1' tiene una firma invalida -- posible "
+                            "intermediario. Mensaje NO enviado.")
+                             .arg(QString::fromStdString(peer)));
           } else {
             auto first = crypto_.encryptFirst(peer, bundle, pointerPayload);
             Writer w;
@@ -1558,7 +1561,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
       }
       case MsgType::PrekeyBundleErr: {
         Reader r(payload);
-        setErrorText("No se pudo iniciar conversacion: " + QString::fromStdString(r.str()));
+        setErrorText(tr("No se pudo iniciar conversacion: %1").arg(QString::fromStdString(r.str())));
         bool wasGroupFanout = pendingOutboundPeer_ && !pendingOutboundGroupId_.empty();
         pendingOutboundPeer_.reset();
         pendingOutboundPayload_.clear();
@@ -1576,7 +1579,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
       }
       case MsgType::UploadBlobBeginErr: {
         Reader r(payload);
-        setErrorText("No se pudo empezar a subir el archivo: " + QString::fromStdString(r.str()));
+        setErrorText(
+            tr("No se pudo empezar a subir el archivo: %1").arg(QString::fromStdString(r.str())));
         outgoingTransfer_.reset();
         setFileTransferStatus("");
         break;
@@ -1586,7 +1590,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         break;
       case MsgType::UploadBlobEndErr: {
         Reader r(payload);
-        setErrorText("Fallo terminando de subir el archivo: " + QString::fromStdString(r.str()));
+        setErrorText(
+            tr("Fallo terminando de subir el archivo: %1").arg(QString::fromStdString(r.str())));
         outgoingTransfer_.reset();
         setFileTransferStatus("");
         break;
@@ -1648,7 +1653,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
               if (isNew) subscribePresence(qsender);
               logChat(sender, /*Peer=*/2, qsender, QString::fromStdString(decoded.text));
               if (sender != activeConversationKey_.toStdString()) markUnread(sender);
-              if (shouldNotify(qsender)) showSystemNotification(qsender, "Nuevo mensaje");
+              if (shouldNotify(qsender)) showSystemNotification(qsender, tr("Nuevo mensaje"));
               break;
             }
             case PayloadKind::FileBlobPointer:
@@ -1657,7 +1662,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
                                        QString::fromStdString(decoded.filename),
                                        decoded.fileSize, decoded.fileKey, decoded.fileHeader);
               if (shouldNotify(QString::fromStdString(sender))) {
-                showSystemNotification(QString::fromStdString(sender), "Nuevo archivo");
+                showSystemNotification(QString::fromStdString(sender), tr("Nuevo archivo"));
               }
               break;
             case PayloadKind::FileMeta:
@@ -1673,8 +1678,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
               break;
           }
         } catch (const std::exception& e) {
-          setErrorText(QString("No se pudo descifrar un mensaje de '") +
-                       QString::fromStdString(sender) + "': " + e.what());
+          setErrorText(tr("No se pudo descifrar un mensaje de '%1': %2")
+                           .arg(QString::fromStdString(sender), QString::fromUtf8(e.what())));
         }
 
         Writer ack;
@@ -1714,7 +1719,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
             if (groupId != activeConversationKey_.toStdString()) markUnread(groupId);
             QString qGroupId = QString::fromStdString(groupId);
             if (shouldNotify(qGroupId)) {
-              showSystemNotification(conversations_.nameOf(qGroupId), "Nuevo mensaje");
+              showSystemNotification(conversations_.nameOf(qGroupId), tr("Nuevo mensaje"));
             }
           } else if (decoded.kind == PayloadKind::FileBlobPointer) {
             onFileBlobPointerReceived(groupId, sender, decoded.blobId,
@@ -1723,14 +1728,14 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
             QString qGroupId = QString::fromStdString(groupId);
             if (shouldNotify(qGroupId)) {
               showSystemNotification(conversations_.nameOf(qGroupId),
-                                     "Nuevo archivo de " + QString::fromStdString(sender));
+                                     tr("Nuevo archivo de %1").arg(QString::fromStdString(sender)));
             }
           }
           // FileMeta/FileChunk/FileEnd (formato viejo): se ignoran, ver el
           // comentario equivalente en el case DeliverMsg.
         } catch (const std::exception& e) {
-          setErrorText(QString("No se pudo descifrar un mensaje de grupo de '") +
-                       QString::fromStdString(sender) + "': " + e.what());
+          setErrorText(tr("No se pudo descifrar un mensaje de grupo de '%1': %2")
+                           .arg(QString::fromStdString(sender), QString::fromUtf8(e.what())));
         }
 
         Writer ack;
@@ -1757,7 +1762,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         break;
     }
   } catch (const std::exception& e) {
-    setErrorText(QString("Error procesando mensaje del servidor: ") + e.what());
+    setErrorText(tr("Error procesando mensaje del servidor: %1").arg(QString::fromUtf8(e.what())));
   }
 }
 

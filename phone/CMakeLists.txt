@@ -13,6 +13,8 @@
 set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 Network)
+# Opcional a proposito -- ver el comentario equivalente en client/CMakeLists.txt.
+find_package(Qt6 QUIET COMPONENTS LinguistTools)
 
 # Sin esta llamada, qt6_add_qml_module no deja el modulo QML en un estado
 # que Android pueda resolver en tiempo de ejecucion (fallaba con "Module
@@ -37,6 +39,8 @@ qt6_add_executable(templar_phone
   ${CMAKE_SOURCE_DIR}/client/src/LocalStore.cpp
   ${CMAKE_SOURCE_DIR}/client/src/MessagePayload.cpp
   ${CMAKE_SOURCE_DIR}/client/src/Theme.cpp
+  ${CMAKE_SOURCE_DIR}/client/src/Language.cpp
+  src/LanguageController.cpp
 )
 target_include_directories(templar_phone PRIVATE ${CMAKE_SOURCE_DIR}/client/src)
 
@@ -128,3 +132,28 @@ target_link_libraries(templar_phone PRIVATE
   Qt6::Network
   templar_sqlite3
 )
+
+# i18n -- mismo criterio que client/CMakeLists.txt (ver el comentario de
+# alli): lupdate es un paso manual (templar_phone_lupdate), lrelease corre en
+# cada build normal.
+if(Qt6LinguistTools_FOUND)
+  set(TEMPLAR_PHONE_TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/i18n/templar_phone_en.ts)
+  qt6_add_lupdate(templar_phone TS_FILES ${TEMPLAR_PHONE_TS_FILES}
+    LUPDATE_TARGET templar_phone_lupdate
+    OPTIONS -target-language en)
+  qt6_add_lrelease(templar_phone
+    TS_FILES ${TEMPLAR_PHONE_TS_FILES}
+    QM_FILES_OUTPUT_VARIABLE TEMPLAR_PHONE_QM_FILES
+  )
+  qt6_add_resources(templar_phone "templar_phone_i18n"
+    PREFIX "/i18n"
+    BASE "${CMAKE_CURRENT_BINARY_DIR}"
+    FILES ${TEMPLAR_PHONE_QM_FILES}
+  )
+else()
+  message(WARNING
+    "Qt6 LinguistTools no encontrado -- templar_phone se compilara sin la "
+    "traduccion al ingles embebida (quedara solo en espanol). Instala "
+    "qt6-tools (Arch) o qt6-l10n-tools/qttools5-dev-tools (Debian) y "
+    "reconfigura para incluirla.")
+endif()
