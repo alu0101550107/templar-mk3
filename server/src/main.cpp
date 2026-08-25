@@ -94,11 +94,49 @@ asio::awaitable<void> listener(tcp::acceptor acceptor, asio::io_context& ioConte
   for (;;) {
     auto strand = asio::make_strand(ioContext.get_executor());
     tcp::socket socket(strand);
-    co_await acceptor.async_accept(socket, asio::use_awaitable);
+    // redirect_error en vez de use_awaitable a secas: un accept() puede
+    // fallar por motivos transitorios (un peer que manda RST entre el SYN y
+    // el accept() de verdad, o EMFILE si se agotan los descriptores de
+    // fichero bajo trafico de escaneo masivo sostenido -- visto en
+    // produccion) -- con use_awaitable eso lanzaria una excepcion que, al
+    // escapar de esta corrutina lanzada con asio::detached (mas abajo en
+    // main()), la mataria en silencio para siempre: el proceso sigue
+    // "activo" segun systemd, pero deja de aceptar conexiones nuevas hasta
+    // reiniciarlo a mano. Capturando el error aqui, el bucle sigue vivo
+    // pase lo que pase.
+    boost::system::error_code acceptEc;
+    co_await acceptor.async_accept(socket, asio::redirect_error(asio::use_awaitable, acceptEc));
+    if (acceptEc) {
+      std::cerr << "[Servidor] Fallo aceptando una conexion, se reintenta: " << acceptEc.message()
+                << "\n";
+      // Pequena espera antes de reintentar: sin esto, un fallo persistente
+      // (p.ej. EMFILE mientras el limite de descriptores siga agotado)
+      // convertiria el bucle en un spin sin freno consumiendo CPU y
+      // llenando el log.
+      asio::steady_timer backoff(ioContext);
+      backoff.expires_after(std::chrono::milliseconds(200));
+      boost::system::error_code waitEc;
+      co_await backoff.async_wait(asio::redirect_error(asio::use_awaitable, waitEc));
+      continue;
+    }
 
-    auto endpoint = socket.remote_endpoint();
-    std::string ip = endpoint.address().to_string();
-    std::cout << "[Servidor] Nueva conexion desde " << ip << ":" << endpoint.port() << "\n";
+    // remote_endpoint() es sincrono y SI puede lanzar (p.ej. si el peer ya
+    // cerro la conexion en el intervalo entre que accept() completo y esta
+    // linea) -- mismo riesgo que el accept() de arriba de matar el listener
+    // entero si escapa sin capturar, asi que se trata igual: se loguea y se
+    // sigue con la siguiente conexion en vez de dejar que la excepcion suba.
+    std::string ip;
+    uint16_t remotePort = 0;
+    try {
+      auto endpoint = socket.remote_endpoint();
+      ip = endpoint.address().to_string();
+      remotePort = endpoint.port();
+    } catch (const std::exception& e) {
+      std::cerr << "[Servidor] Conexion aceptada pero ya cerrada al leer su direccion: " << e.what()
+                << "\n";
+      continue;
+    }
+    std::cout << "[Servidor] Nueva conexion desde " << ip << ":" << remotePort << "\n";
 
     // Se rechaza ANTES del handshake TLS (mas barato) si esta IP ya tiene
     // demasiadas conexiones abiertas a la vez -- ver Router::kMaxConnectionsPerIp.
