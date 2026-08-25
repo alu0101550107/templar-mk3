@@ -23,6 +23,7 @@
 #include <QPixmap>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSettings>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStandardPaths>
@@ -225,9 +226,22 @@ void MainWindow::onTrayQuitClicked() { qApp->quit(); }
 // --- Construccion de pantallas ---
 
 QWidget* MainWindow::buildLoginPage() {
-  hostEdit_ = new QLineEdit("127.0.0.1");
+  // Recuerda el ultimo servidor y usuario usados (nunca la contrasena) --
+  // mismo criterio y misma clave de QSettings que rememberedServerAddress/
+  // rememberedUsername en el cliente movil (ver ClientController.cpp), para
+  // no tener que retocar ambos campos cada vez que se abre la app.
+  QString rememberedAddress = QSettings().value("lastServerAddress").toString();
+  QString rememberedHost = "127.0.0.1";
+  QString rememberedPort = "8080";
+  int addressColonIdx = rememberedAddress.lastIndexOf(':');
+  if (addressColonIdx > 0) {
+    rememberedHost = rememberedAddress.left(addressColonIdx);
+    rememberedPort = rememberedAddress.mid(addressColonIdx + 1);
+  }
+
+  hostEdit_ = new QLineEdit(rememberedHost);
   hostEdit_->setObjectName("hostEdit");
-  portEdit_ = new QLineEdit("8080");
+  portEdit_ = new QLineEdit(rememberedPort);
   portEdit_->setObjectName("portEdit");
   connectButton_ = new QPushButton(tr("Conectar"));
   connectButton_->setObjectName("connectButton");
@@ -239,7 +253,7 @@ QWidget* MainWindow::buildLoginPage() {
   connRow->addWidget(portEdit_);
   connRow->addWidget(connectButton_);
 
-  usernameEdit_ = new QLineEdit();
+  usernameEdit_ = new QLineEdit(QSettings().value("lastUsername").toString());
   usernameEdit_->setObjectName("usernameEdit");
   usernameEdit_->setPlaceholderText(tr("usuario"));
   passwordEdit_ = new QLineEdit();
@@ -1606,6 +1620,7 @@ void MainWindow::onConnectClicked() {
   setLoginError("");
   statusLabel_->setText(tr("Conectando..."));
   net_.connectToServer(hostEdit_->text(), static_cast<quint16>(portEdit_->text().toUInt()));
+  QSettings().setValue("lastServerAddress", hostEdit_->text() + ":" + portEdit_->text());
 }
 
 void MainWindow::onDisconnectClicked() { net_.disconnectFromServer(); }
@@ -1648,6 +1663,7 @@ void MainWindow::onLoginClicked() {
   // releer passwordEdit_ mas tarde, por si el usuario edita el campo
   // mientras el login esta en vuelo.
   pendingLoginPassword_ = password;
+  QSettings().setValue("lastUsername", usernameEdit_->text());
 
   Writer w;
   w.str(username);
