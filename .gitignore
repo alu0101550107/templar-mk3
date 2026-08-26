@@ -12,3 +12,4 @@ templar-server.service.example
 .vscode/
 .idea/
 compile_commands.json
+*.apk
