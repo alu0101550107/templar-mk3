@@ -292,8 +292,12 @@ class ClientController : public QObject {
   // (rawHtml=true) cuyo enlace ya no funcionara tras un reinicio (ver
   // pendingBlobDownloads_), para no dejar markup sin escapar en el
   // historial recargado.
+  // timestamp: 0 (por defecto) usa la hora actual -- se fija explicito solo
+  // al procesar un DeliverMsg/DeliverGroupMsg, con la hora real de envio
+  // que manda el servidor (campo sentAt), para que un mensaje recibido de
+  // alguien desconectado muestre cuando se mando, no cuando se entrego.
   void logChat(const std::string& peerKey, int kind, const QString& who, const QString& text,
-              bool rawHtml = false, const QString& persistText = QString());
+              bool rawHtml = false, const QString& persistText = QString(), qint64 timestamp = 0);
   // Anade una linea a la conversacion "Sistema" -- equivalente movil de
   // MainWindow::logSystem. Solo se llama para eventos importantes
   // (conectar/desconectar/login/registro/errores), no para cada
@@ -357,10 +361,12 @@ class ClientController : public QObject {
   // funciones homonimas en MainWindow.cpp del escritorio (ver el
   // comentario de sendFile para el mecanismo). ---
   void sendBlobPointerAndFinish();
+  // sentAt: hora real de envio (campo sentAt de DeliverMsg/DeliverGroupMsg),
+  // no la de recepcion -- ver el comentario de logChat.
   void onFileBlobPointerReceived(const std::string& originKey, const std::string& sender,
                                  const std::string& blobId, const QString& filename,
                                  quint64 fileSize, const templar::proto::Bytes& fileKey,
-                                 const templar::proto::Bytes& fileHeader);
+                                 const templar::proto::Bytes& fileHeader, qint64 sentAt);
   void onBlobDataReceived(const std::string& blobId, const templar::proto::Bytes& chunk);
   void onBlobEndReceived(const std::string& blobId);
   void onBlobNotFound(const std::string& blobId, const QString& reason);

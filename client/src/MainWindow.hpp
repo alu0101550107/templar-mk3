@@ -157,8 +157,12 @@ class MainWindow : public QWidget {
   // funcionaran tras un reinicio (ver pendingBlobDownloads_, solo en
   // memoria) -- sin esto, el historial recargado mostraria el markup sin
   // escapar como texto suelto en vez de algo legible.
+  // timestamp: 0 (por defecto) usa la hora actual -- se fija explicito solo
+  // al procesar un DeliverMsg/DeliverGroupMsg, con la hora real de envio
+  // que manda el servidor (campo sentAt), para que un mensaje recibido de
+  // alguien desconectado muestre cuando se mando, no cuando se entrego.
   void logChat(const std::string& peerKey, LineKind kind, const QString& who, const QString& text,
-              bool rawHtml = false, const QString& persistText = QString());
+              bool rawHtml = false, const QString& persistText = QString(), qint64 timestamp = 0);
   void ensureConversationListed(const std::string& key, const QString& label);
   void renderActiveConversation();
   void selectConversation(const std::string& key);
@@ -320,10 +324,12 @@ class MainWindow : public QWidget {
   // clave en pendingBlobDownloads_ y deja un enlace "Descargar" en el chat
   // -- no se descarga sola, el usuario decide cuando (ver
   // startBlobDownload).
+  // sentAt: hora real de envio (campo sentAt de DeliverMsg/DeliverGroupMsg),
+  // no la de recepcion -- ver el comentario de logChat.
   void onFileBlobPointerReceived(const std::string& originKey, const std::string& sender,
                                  const std::string& blobId, const QString& filename,
                                  uint64_t fileSize, const templar::proto::Bytes& fileKey,
-                                 const templar::proto::Bytes& fileHeader);
+                                 const templar::proto::Bytes& fileHeader, qint64 sentAt);
   // Se llama al pulsar un enlace "Descargar" (ver eventFilter). No hace
   // nada si blobId no esta en pendingBlobDownloads_ -- p.ej. si la app se
   // reinicio desde que llego el puntero (la clave solo vive en memoria, a

@@ -18,7 +18,21 @@ enum class MsgType : uint8_t {
   FetchPrekeyBundle = 8,
   PrekeyBundle = 9,
   PrekeyBundleErr = 10,
+  // Cliente -> servidor: str recipientUsername, u8 isFirst, blob
+  // senderIdentityPkX25519, blob senderEphemeralPk, blob ciphertext, blob
+  // usedOneTimePrekeyPub. Los ultimos cuatro campos son vacios si !isFirst
+  // (no hace falta repetir el bootstrap X3DH en cada mensaje de una sesion
+  // ya establecida).
   SendMsg = 11,
+  // Servidor -> cliente: u32 mailboxId, str sender, u8 isFirst, blob
+  // senderIdentityPkX25519, blob senderEphemeralPk, blob ciphertext, blob
+  // usedOneTimePrekeyPub, u64 sentAt (epoch, segundos -- cuando el servidor
+  // recibio el SendMsg original, no cuando este DeliverMsg llega al
+  // destinatario: para un mensaje en cola mientras el destinatario estaba
+  // desconectado, esos dos momentos pueden diferir en horas o dias). Se
+  // manda igual en entrega en vivo (justo tras SendMsg) que al vaciar el
+  // buzon en el siguiente login (Router::flushMailbox) -- mismo formato en
+  // ambos casos, el cliente no distingue de donde vino.
   DeliverMsg = 12,
   Ack = 13,
   // Cliente -> servidor: "avisame si el usuario X se conecta o desconecta".
@@ -66,7 +80,9 @@ enum class MsgType : uint8_t {
   // El cliente manda una de estas por cada miembro del grupo (fan-out).
   SendGroupMsg = 25,
   // Servidor -> cliente: u32 mailboxId, str groupId, str sender, u8 isFirst,
-  // blob senderIdentityPkX25519, blob senderEphemeralPk, blob ciphertext.
+  // blob senderIdentityPkX25519, blob senderEphemeralPk, blob ciphertext,
+  // blob usedOneTimePrekeyPub, u64 sentAt (mismo significado que en
+  // DeliverMsg -- ver su comentario).
   // Se responde con el mismo Ack{mailboxId} que ya existe para DeliverMsg.
   DeliverGroupMsg = 26,
   // Servidor -> cliente, una vez justo tras LoginOk: snapshot completo de

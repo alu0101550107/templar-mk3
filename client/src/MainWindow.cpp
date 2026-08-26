@@ -628,16 +628,18 @@ void MainWindow::logSystem(const QString& text) {
 }
 
 void MainWindow::logChat(const std::string& peerKey, LineKind kind, const QString& who,
-                         const QString& text, bool rawHtml, const QString& persistText) {
+                         const QString& text, bool rawHtml, const QString& persistText,
+                         qint64 timestamp) {
   ensureConversationListed(peerKey, QString::fromStdString(peerKey));
-  ChatLine line{kind, who, text, QDateTime::currentSecsSinceEpoch(), rawHtml};
+  qint64 effectiveTimestamp = timestamp != 0 ? timestamp : QDateTime::currentSecsSinceEpoch();
+  ChatLine line{kind, who, text, effectiveTimestamp, rawHtml};
   conversations_[peerKey].push_back(line);
   appendLiveLine(peerKey, line);
   if (localStore_.isUnlocked()) {
     try {
       const QString& toPersist = persistText.isEmpty() ? text : persistText;
       localStore_.appendHistoryLine(peerKey, static_cast<int>(kind), who.toStdString(),
-                                    toPersist.toStdString(), rawHtml);
+                                    toPersist.toStdString(), rawHtml, effectiveTimestamp);
     } catch (const std::exception& e) {
       // Un fallo de persistencia local NUNCA debe poder cortar el flujo de
       // mensajeria en vivo (el mensaje ya se mostro arriba, ya se envio o
@@ -1408,7 +1410,7 @@ void MainWindow::sendBlobPointerAndFinish() {
 void MainWindow::onFileBlobPointerReceived(const std::string& originKey, const std::string& sender,
                                            const std::string& blobId, const QString& filename,
                                            uint64_t fileSize, const Bytes& fileKey,
-                                           const Bytes& fileHeader) {
+                                           const Bytes& fileHeader, qint64 sentAt) {
   if (fileSize > kMaxFileSize || fileKey.size() != templar::crypto::kFileKeyBytes ||
       fileHeader.size() != templar::crypto::kFileHeaderBytes) {
     logSystem(tr("Se rechaza un puntero de archivo invalido de %1.")
@@ -1452,7 +1454,8 @@ void MainWindow::onFileBlobPointerReceived(const std::string& originKey, const s
   // o el blob caduque en el servidor (30 dias).
   QString link = "<a href='templar-download:" + QString::fromStdString(blobId) + "'>⬇ " +
                 tr("Descargar") + " " + filename.toHtmlEscaped() + " (" + sizeText + ")</a>";
-  logChat(originKey, LineKind::Peer, QString::fromStdString(sender), link, /*rawHtml=*/true);
+  logChat(originKey, LineKind::Peer, QString::fromStdString(sender), link, /*rawHtml=*/true,
+         /*persistText=*/QString(), sentAt);
   if (originKey != activeConversation_) markUnread(originKey);
 }
 
@@ -1986,6 +1989,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         Bytes senderEphemeralPk = r.blob();
         Bytes ciphertext = r.blob();
         Bytes usedOneTimePrekeyPub = r.blob();
+        auto sentAt = static_cast<qint64>(r.u64());
 
         Bytes plaintext;
         if (isFirst) {
@@ -2001,7 +2005,8 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
           case PayloadKind::Text: {
             trySaveSession(sender);
             logChat(sender, LineKind::Peer, QString::fromStdString(sender),
-                   QString::fromStdString(decoded.text));
+                   QString::fromStdString(decoded.text), /*rawHtml=*/false,
+                   /*persistText=*/QString(), sentAt);
             if (sender != activeConversation_) markUnread(sender);
             if (trayIcon_ && shouldNotify()) {
               // Contenido generico a proposito: el texto real no aparece en
@@ -2016,7 +2021,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
             trySaveSession(sender);
             onFileBlobPointerReceived(sender, sender, decoded.blobId,
                                       QString::fromStdString(decoded.filename), decoded.fileSize,
-                                      decoded.fileKey, decoded.fileHeader);
+                                      decoded.fileKey, decoded.fileHeader, sentAt);
             if (trayIcon_ && shouldNotify()) {
               trayIcon_->showMessage(QString::fromStdString(sender), tr("Nuevo archivo"),
                                      QSystemTrayIcon::Information, 4000);
@@ -2163,6 +2168,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         Bytes senderEphemeralPk = r.blob();
         Bytes ciphertext = r.blob();
         Bytes usedOneTimePrekeyPub = r.blob();
+        auto sentAt = static_cast<qint64>(r.u64());
 
         Bytes plaintext;
         if (isFirst) {
@@ -2177,7 +2183,8 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         DecodedPayload decoded = MessagePayload::decode(plaintext);
         if (decoded.kind == PayloadKind::Text) {
           logChat(groupId, LineKind::Peer, QString::fromStdString(sender),
-                 QString::fromStdString(decoded.text));
+                 QString::fromStdString(decoded.text), /*rawHtml=*/false, /*persistText=*/QString(),
+                 sentAt);
           if (groupId != activeConversation_) markUnread(groupId);
           if (trayIcon_ && shouldNotify()) {
             trayIcon_->showMessage(displayLabelFor(groupId),
@@ -2187,7 +2194,7 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         } else if (decoded.kind == PayloadKind::FileBlobPointer) {
           onFileBlobPointerReceived(groupId, sender, decoded.blobId,
                                     QString::fromStdString(decoded.filename), decoded.fileSize,
-                                    decoded.fileKey, decoded.fileHeader);
+                                    decoded.fileKey, decoded.fileHeader, sentAt);
           if (trayIcon_ && shouldNotify()) {
             trayIcon_->showMessage(displayLabelFor(groupId),
                                    tr("Nuevo archivo de %1").arg(QString::fromStdString(sender)),

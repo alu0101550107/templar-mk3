@@ -46,6 +46,12 @@ class Database {
     Bytes ciphertext;
     std::string groupId;         // vacío si es un mensaje 1-a-1 normal
     Bytes usedOneTimePrekeyPub;  // vacío si !isFirst o no habia ninguna disponible
+    // Epoch (segundos) de cuando el SendMsg original llego al servidor --
+    // NO de cuando se entrega (que puede ser mucho despues, si el
+    // destinatario estaba desconectado). Se relaya tal cual en DeliverMsg/
+    // DeliverGroupMsg para que el cliente pueda mostrar la hora real de
+    // envio en vez de la hora de login.
+    int64_t createdAt = 0;
   };
 
   struct GroupRecord {
@@ -85,9 +91,14 @@ class Database {
 
   std::optional<UserRecord> findUser(const std::string& username);
 
+  // sentAt: epoch (segundos) que se guarda como `created_at` y luego se
+  // relaya en DeliverMsg/DeliverGroupMsg -- lo decide el LLAMADOR (no esta
+  // funcion) para que sea el mismo valor exacto usado en la entrega en vivo
+  // (ver Router::relayEncryptedMessage), en vez de leerlo dos veces del
+  // reloj con el riesgo de que difieran por unos milisegundos.
   int64_t enqueueMessage(const std::string& recipientUsername, const std::string& senderUsername,
                          bool isFirst, const Bytes& senderIdentityPkX25519,
-                         const Bytes& senderEphemeralPk, const Bytes& ciphertext,
+                         const Bytes& senderEphemeralPk, const Bytes& ciphertext, int64_t sentAt,
                          const std::string& groupId = "",
                          const Bytes& usedOneTimePrekeyPub = {});
 

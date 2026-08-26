@@ -119,8 +119,14 @@ class LocalStore {
 
   // --- Historial de conversaciones ---
   // conversationKey: username del peer, o "" para el log de sistema.
+  // createdAt: epoch (segundos) a guardar; 0 (por defecto) significa "usar
+  // la hora actual" -- el llamador lo fija explicito solo para un mensaje
+  // RECIBIDO, con la hora real de envio que manda el servidor (ver
+  // MsgType::DeliverMsg), en vez de la hora en que este dispositivo lo
+  // proceso (que puede ser mucho despues si el destinatario estaba
+  // desconectado cuando se envio).
   void appendHistoryLine(const std::string& conversationKey, int kind, const std::string& who,
-                         const std::string& text, bool rawHtml = false);
+                         const std::string& text, bool rawHtml = false, int64_t createdAt = 0);
   std::vector<HistoryLine> loadHistory(const std::string& conversationKey);
   std::vector<std::string> listConversationKeys();
 

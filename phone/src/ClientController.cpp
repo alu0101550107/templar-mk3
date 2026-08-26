@@ -511,8 +511,10 @@ void ClientController::clearUnread(const std::string& key) {
 }
 
 void ClientController::logChat(const std::string& peerKey, int kind, const QString& who,
-                               const QString& text, bool rawHtml, const QString& persistText) {
-  ChatLine line{kind, who, text, QDateTime::currentSecsSinceEpoch(), rawHtml};
+                               const QString& text, bool rawHtml, const QString& persistText,
+                               qint64 timestamp) {
+  qint64 effectiveTimestamp = timestamp != 0 ? timestamp : QDateTime::currentSecsSinceEpoch();
+  ChatLine line{kind, who, text, effectiveTimestamp, rawHtml};
   conversationHistory_[peerKey].push_back(line);
   if (activeConversationKey_.toStdString() == peerKey) history_.append(line);
 
@@ -520,7 +522,7 @@ void ClientController::logChat(const std::string& peerKey, int kind, const QStri
     try {
       const QString& toPersist = persistText.isEmpty() ? text : persistText;
       localStore_.appendHistoryLine(peerKey, kind, who.toStdString(), toPersist.toStdString(),
-                                    rawHtml);
+                                    rawHtml, effectiveTimestamp);
     } catch (const std::exception&) {
       // Un fallo persistiendo no debe romper el envio/recepcion en vivo --
       // mismo criterio que MainWindow::logChat en el escritorio.
@@ -934,7 +936,8 @@ void ClientController::onFileBlobPointerReceived(const std::string& originKey,
                                                   const std::string& sender,
                                                   const std::string& blobId,
                                                   const QString& filename, quint64 fileSize,
-                                                  const Bytes& fileKey, const Bytes& fileHeader) {
+                                                  const Bytes& fileKey, const Bytes& fileHeader,
+                                                  qint64 sentAt) {
   if (fileSize > kMaxFileSize || fileKey.size() != templar::crypto::kFileKeyBytes ||
       fileHeader.size() != templar::crypto::kFileHeaderBytes) {
     setErrorText(tr("Se rechaza un puntero de archivo invalido de %1.")
@@ -978,7 +981,8 @@ void ClientController::onFileBlobPointerReceived(const std::string& originKey,
   // descargue o el blob caduque en el servidor (30 dias).
   QString link = "<a href='templar-download:" + QString::fromStdString(blobId) + "'>⬇ " +
                 tr("Descargar") + " " + filename.toHtmlEscaped() + " (" + sizeText + ")</a>";
-  logChat(originKey, /*Peer=*/2, QString::fromStdString(sender), link, /*rawHtml=*/true);
+  logChat(originKey, /*Peer=*/2, QString::fromStdString(sender), link, /*rawHtml=*/true,
+         /*persistText=*/QString(), sentAt);
   if (originKey != activeConversationKey_.toStdString()) markUnread(originKey);
 }
 
@@ -1625,6 +1629,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         Bytes senderEphemeralPk = r.blob();
         Bytes ciphertext = r.blob();
         Bytes usedOneTimePrekeyPub = r.blob();
+        auto sentAt = static_cast<qint64>(r.u64());
 
         // El descifrado/procesado va en su PROPIO try -- si falla (sesion
         // desincronizada, mensaje corrupto, o un reenvio del servidor de
@@ -1651,7 +1656,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
               QString qsender = QString::fromStdString(sender);
               bool isNew = conversations_.upsert(qsender, qsender, /*isGroup=*/false);
               if (isNew) subscribePresence(qsender);
-              logChat(sender, /*Peer=*/2, qsender, QString::fromStdString(decoded.text));
+              logChat(sender, /*Peer=*/2, qsender, QString::fromStdString(decoded.text),
+                     /*rawHtml=*/false, /*persistText=*/QString(), sentAt);
               if (sender != activeConversationKey_.toStdString()) markUnread(sender);
               if (shouldNotify(qsender)) showSystemNotification(qsender, tr("Nuevo mensaje"));
               break;
@@ -1660,7 +1666,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
               trySaveSession(sender);
               onFileBlobPointerReceived(sender, sender, decoded.blobId,
                                        QString::fromStdString(decoded.filename),
-                                       decoded.fileSize, decoded.fileKey, decoded.fileHeader);
+                                       decoded.fileSize, decoded.fileKey, decoded.fileHeader,
+                                       sentAt);
               if (shouldNotify(QString::fromStdString(sender))) {
                 showSystemNotification(QString::fromStdString(sender), tr("Nuevo archivo"));
               }
@@ -1697,6 +1704,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         Bytes senderEphemeralPk = r.blob();
         Bytes ciphertext = r.blob();
         Bytes usedOneTimePrekeyPub = r.blob();
+        auto sentAt = static_cast<qint64>(r.u64());
 
         // Mismo motivo que en DeliverMsg de arriba: el Ack tiene que
         // mandarse pase lo que pase con el descifrado, o el servidor
@@ -1715,7 +1723,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
           DecodedPayload decoded = MessagePayload::decode(plaintext);
           if (decoded.kind == PayloadKind::Text) {
             logChat(groupId, /*Peer=*/2, QString::fromStdString(sender),
-                   QString::fromStdString(decoded.text));
+                   QString::fromStdString(decoded.text), /*rawHtml=*/false,
+                   /*persistText=*/QString(), sentAt);
             if (groupId != activeConversationKey_.toStdString()) markUnread(groupId);
             QString qGroupId = QString::fromStdString(groupId);
             if (shouldNotify(qGroupId)) {
@@ -1724,7 +1733,7 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
           } else if (decoded.kind == PayloadKind::FileBlobPointer) {
             onFileBlobPointerReceived(groupId, sender, decoded.blobId,
                                      QString::fromStdString(decoded.filename), decoded.fileSize,
-                                     decoded.fileKey, decoded.fileHeader);
+                                     decoded.fileKey, decoded.fileHeader, sentAt);
             QString qGroupId = QString::fromStdString(groupId);
             if (shouldNotify(qGroupId)) {
               showSystemNotification(conversations_.nameOf(qGroupId),

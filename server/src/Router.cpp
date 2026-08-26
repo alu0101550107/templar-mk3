@@ -3,6 +3,7 @@
 #include <sodium.h>
 
 #include <algorithm>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -381,10 +382,17 @@ void Router::relayEncryptedMessage(const std::shared_ptr<Session>& session,
                                    const Bytes& senderEphemeralPk, const Bytes& ciphertext,
                                    const std::string& groupId,
                                    const Bytes& usedOneTimePrekeyPub) {
+  // Un solo valor de "ahora", reusado tanto para lo que se guarda en
+  // `mailbox` como para lo que se manda si el destinatario esta online
+  // ahora mismo -- evita que ambos difieran por los milisegundos que tarda
+  // la consulta a la BD si se leyera el reloj dos veces.
+  int64_t sentAt = static_cast<int64_t>(std::time(nullptr));
+
   int64_t mailboxId;
   try {
     mailboxId = db_.enqueueMessage(recipient, session->username(), isFirst, senderIdentityPkX25519,
-                                   senderEphemeralPk, ciphertext, groupId, usedOneTimePrekeyPub);
+                                   senderEphemeralPk, ciphertext, sentAt, groupId,
+                                   usedOneTimePrekeyPub);
   } catch (const std::exception& e) {
     std::cerr << "[Router] " << (groupId.empty() ? "SendMsg" : "SendGroupMsg")
               << " fallo: " << e.what() << "\n";
@@ -400,6 +408,7 @@ void Router::relayEncryptedMessage(const std::shared_ptr<Session>& session,
   w.blob(senderEphemeralPk);
   w.blob(ciphertext);
   w.blob(usedOneTimePrekeyPub);
+  w.u64(static_cast<uint64_t>(sentAt));
   Bytes deliverPayload = w.take();
 
   if (auto recipientSession = findOnline(recipient)) {
@@ -467,6 +476,7 @@ void Router::flushMailbox(const std::shared_ptr<Session>& session) {
     w.blob(row.senderEphemeralPk);
     w.blob(row.ciphertext);
     w.blob(row.usedOneTimePrekeyPub);
+    w.u64(static_cast<uint64_t>(row.createdAt));
     session->deliver(row.groupId.empty() ? MsgType::DeliverMsg : MsgType::DeliverGroupMsg,
                      w.take());
   }

@@ -430,7 +430,7 @@ std::vector<std::string> LocalStore::listSessionPeers() {
 
 void LocalStore::appendHistoryLine(const std::string& conversationKey, int kind,
                                    const std::string& who, const std::string& text,
-                                   bool rawHtml) {
+                                   bool rawHtml, int64_t createdAt) {
   Stmt s(db_,
         "INSERT INTO history (conversation_key, kind, who, text, created_at, raw_html) "
         "VALUES (?, ?, ?, ?, ?, ?);");
@@ -438,7 +438,7 @@ void LocalStore::appendHistoryLine(const std::string& conversationKey, int kind,
   sqlite3_bind_int(s, 2, kind);
   bindText(s, 3, who);
   bindText(s, 4, text);
-  sqlite3_bind_int64(s, 5, static_cast<int64_t>(std::time(nullptr)));
+  sqlite3_bind_int64(s, 5, createdAt != 0 ? createdAt : static_cast<int64_t>(std::time(nullptr)));
   sqlite3_bind_int(s, 6, rawHtml ? 1 : 0);
 
   if (sqlite3_step(s) != SQLITE_DONE) {

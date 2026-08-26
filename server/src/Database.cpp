@@ -253,7 +253,7 @@ std::optional<Database::UserRecord> Database::findUser(const std::string& userna
 int64_t Database::enqueueMessage(const std::string& recipientUsername,
                                  const std::string& senderUsername, bool isFirst,
                                  const Bytes& senderIdentityPkX25519, const Bytes& senderEphemeralPk,
-                                 const Bytes& ciphertext, const std::string& groupId,
+                                 const Bytes& ciphertext, int64_t sentAt, const std::string& groupId,
                                  const Bytes& usedOneTimePrekeyPub) {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -278,7 +278,7 @@ int64_t Database::enqueueMessage(const std::string& recipientUsername,
   bindBlob(s, 3, senderIdentityPkX25519);
   bindBlob(s, 4, senderEphemeralPk);
   bindBlob(s, 5, ciphertext);
-  sqlite3_bind_int64(s, 6, static_cast<int64_t>(std::time(nullptr)));
+  sqlite3_bind_int64(s, 6, sentAt);
   if (groupId.empty()) {
     sqlite3_bind_null(s, 7);
   } else {
@@ -307,7 +307,7 @@ std::vector<Database::MailboxRow> Database::fetchPending(const std::string& user
 
   Stmt s(db_,
         "SELECT m.id, m.sender_username, m.is_first, m.sender_identity_pk_x25519, "
-        "m.sender_ephemeral_pk, m.ciphertext, m.group_id, m.used_otpk "
+        "m.sender_ephemeral_pk, m.ciphertext, m.group_id, m.used_otpk, m.created_at "
         "FROM mailbox m JOIN users u ON m.recipient_id = u.id "
         "WHERE u.username = ? ORDER BY m.id ASC;");
   bindText(s, 1, username);
@@ -323,6 +323,7 @@ std::vector<Database::MailboxRow> Database::fetchPending(const std::string& user
     row.ciphertext = columnBlob(s, 5);
     row.groupId = columnText(s, 6);
     row.usedOneTimePrekeyPub = columnBlob(s, 7);
+    row.createdAt = sqlite3_column_int64(s, 8);
     out.push_back(std::move(row));
   }
   return out;
