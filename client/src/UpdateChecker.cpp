@@ -20,6 +20,10 @@ namespace {
 constexpr const char* kRepoOwner = "alu0101550107";
 constexpr const char* kRepoName = "templar-mk3";
 constexpr int kCheckIntervalHours = 24;
+// Nombre EXACTO con el que hay que subir el .apk como asset en cada
+// GitHub Release para que apkDownloadUrl() lo encuentre -- ver el
+// comentario de esa funcion.
+constexpr const char* kApkAssetName = "templar.apk";
 
 // Compara dos versiones "x.y.z" (con o sin "v" delante, asi el tag_name de
 // GitHub -- tipicamente "v1.2.0" -- se compara tal cual contra
@@ -54,6 +58,12 @@ QString UpdateChecker::currentVersion() const { return QStringLiteral(TEMPLAR_AP
 QString UpdateChecker::releaseUrl() const {
   return QStringLiteral("https://github.com/%1/%2/releases/latest")
       .arg(QString::fromUtf8(kRepoOwner), QString::fromUtf8(kRepoName));
+}
+
+QString UpdateChecker::apkDownloadUrl() const {
+  return QStringLiteral("https://github.com/%1/%2/releases/latest/download/%3")
+      .arg(QString::fromUtf8(kRepoOwner), QString::fromUtf8(kRepoName),
+          QString::fromUtf8(kApkAssetName));
 }
 
 void UpdateChecker::checkIfDue() {

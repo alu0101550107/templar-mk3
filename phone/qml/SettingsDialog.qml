@@ -302,15 +302,16 @@ Dialog {
         }
 
         // Enlace fijo, siempre visible (haya o no version nueva) --
-        // updateChecker.releaseUrl apunta a ".../releases/latest", GitHub
-        // redirige solo al ultimo release publicado.
+        // updateChecker.apkDownloadUrl baja el .apk directo (sin pasar por
+        // la pagina del release, que tambien trae el zip/tar.gz del codigo
+        // fuente que genera GitHub solo -- facil de bajar por error).
         Label {
             text: updateChecker.updateAvailable
                 ? qsTr("Version %1 instalada -- hay una nueva: %2. <a href='%3'>Descargar</a>")
                       .arg(updateChecker.currentVersion).arg(updateChecker.latestVersion)
-                      .arg(updateChecker.releaseUrl)
+                      .arg(updateChecker.apkDownloadUrl)
                 : qsTr("Version %1 instalada. <a href='%2'>Ver ultima version en GitHub</a>")
-                      .arg(updateChecker.currentVersion).arg(updateChecker.releaseUrl)
+                      .arg(updateChecker.currentVersion).arg(updateChecker.apkDownloadUrl)
             textFormat: Text.RichText
             onLinkActivated: (link) => Qt.openUrlExternally(link)
             wrapMode: Text.WordWrap
