@@ -25,10 +25,14 @@ add_executable(templar_client
   src/LocalStore.cpp
   src/Theme.cpp
   src/Language.cpp
+  src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
   resources/templar.qrc
 )
+# Version compilada en el binario -- ver UpdateChecker.cpp y el
+# project(... VERSION x.y.z) del CMakeLists.txt raiz.
+target_compile_definitions(templar_client PRIVATE TEMPLAR_APP_VERSION="${PROJECT_VERSION}")
 
 target_link_libraries(templar_client PRIVATE
   templar_common
@@ -131,6 +135,7 @@ add_executable(templar_gui_smoke
   src/LocalStore.cpp
   src/Theme.cpp
   src/Language.cpp
+  src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
   resources/templar.qrc
@@ -159,6 +164,7 @@ add_executable(templar_reregister_smoke
   src/LocalStore.cpp
   src/Theme.cpp
   src/Language.cpp
+  src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
   resources/templar.qrc
@@ -187,6 +193,7 @@ add_executable(templar_group_smoke
   src/LocalStore.cpp
   src/Theme.cpp
   src/Language.cpp
+  src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
   resources/templar.qrc

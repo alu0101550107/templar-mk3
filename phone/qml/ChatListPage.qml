@@ -97,6 +97,22 @@ Page {
             Layout.margins: 8
         }
 
+        // Mismo aviso que en LoginPage.qml -- se repite aqui por si el
+        // usuario ya habia pasado de esa pantalla cuando la comprobacion en
+        // segundo plano termina.
+        Label {
+            visible: updateChecker.updateAvailable
+            text: qsTr("Hay una version nueva disponible (%1). <a href='%2'>Descargar</a>")
+                .arg(updateChecker.latestVersion).arg(updateChecker.releaseUrl)
+            textFormat: Text.RichText
+            onLinkActivated: (link) => Qt.openUrlExternally(link)
+            wrapMode: Text.WordWrap
+            color: theme.accent
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+            Layout.margins: 8
+        }
+
         // Invitaciones a grupo pendientes -- equivalente movil del panel
         // "Invitaciones pendientes" de la barra lateral en escritorio
         // (inviteList_/acceptInviteButton_/rejectInviteButton_ en

@@ -294,6 +294,30 @@ Dialog {
             Layout.fillWidth: true
         }
 
+        Label {
+            text: qsTr("Version")
+            color: theme.accent
+            font.bold: true
+            Layout.topMargin: 8
+        }
+
+        // Enlace fijo, siempre visible (haya o no version nueva) --
+        // updateChecker.releaseUrl apunta a ".../releases/latest", GitHub
+        // redirige solo al ultimo release publicado.
+        Label {
+            text: updateChecker.updateAvailable
+                ? qsTr("Version %1 instalada -- hay una nueva: %2. <a href='%3'>Descargar</a>")
+                      .arg(updateChecker.currentVersion).arg(updateChecker.latestVersion)
+                      .arg(updateChecker.releaseUrl)
+                : qsTr("Version %1 instalada. <a href='%2'>Ver ultima version en GitHub</a>")
+                      .arg(updateChecker.currentVersion).arg(updateChecker.releaseUrl)
+            textFormat: Text.RichText
+            onLinkActivated: (link) => Qt.openUrlExternally(link)
+            wrapMode: Text.WordWrap
+            color: theme.foreground
+            Layout.fillWidth: true
+        }
+
         // Oculto por completo si no hay hardware/huellas registradas (o en
         // escritorio, donde biometric.available siempre es false -- ver
         // BiometricBridge.cpp).

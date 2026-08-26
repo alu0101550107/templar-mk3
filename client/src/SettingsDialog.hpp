@@ -4,6 +4,7 @@
 
 #include "Language.hpp"
 #include "Theme.hpp"
+#include "UpdateChecker.hpp"
 
 class QPushButton;
 class QVBoxLayout;
@@ -11,14 +12,19 @@ class QComboBox;
 
 namespace templar::client {
 
-// Dialogo de ajustes: colores del tema, tipografia, e idioma de la
-// interfaz. No toca la cuenta ni la conexion -- eso vive en la pantalla de
-// login.
+// Dialogo de ajustes: colores del tema, tipografia, idioma de la interfaz,
+// y version instalada. No toca la cuenta ni la conexion -- eso vive en la
+// pantalla de login.
 class SettingsDialog : public QDialog {
   Q_OBJECT
 
  public:
-  explicit SettingsDialog(const Theme& current, QWidget* parent = nullptr);
+  // updateChecker: la MISMA instancia que MainWindow ya comprobo al
+  // arrancar (ver MainWindow::updateChecker_) -- solo se lee aqui para
+  // mostrar el enlace, este dialogo nunca dispara una comprobacion de red
+  // por su cuenta.
+  explicit SettingsDialog(const Theme& current, const templar::UpdateChecker& updateChecker,
+                          QWidget* parent = nullptr);
 
   Theme resultTheme() const { return theme_; }
   // Idioma elegido en el desplegable -- MainWindow compara contra

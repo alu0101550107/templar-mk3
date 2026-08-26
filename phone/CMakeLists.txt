@@ -40,9 +40,13 @@ qt6_add_executable(templar_phone
   ${CMAKE_SOURCE_DIR}/client/src/MessagePayload.cpp
   ${CMAKE_SOURCE_DIR}/client/src/Theme.cpp
   ${CMAKE_SOURCE_DIR}/client/src/Language.cpp
+  ${CMAKE_SOURCE_DIR}/client/src/UpdateChecker.cpp
   src/LanguageController.cpp
 )
 target_include_directories(templar_phone PRIVATE ${CMAKE_SOURCE_DIR}/client/src)
+# Version compilada en el binario -- ver UpdateChecker.cpp y el
+# project(... VERSION x.y.z) del CMakeLists.txt raiz.
+target_compile_definitions(templar_phone PRIVATE TEMPLAR_APP_VERSION="${PROJECT_VERSION}")
 
 if(ANDROID)
   # Manifest propio (android/AndroidManifest.xml) en vez del que genera Qt

@@ -10,6 +10,7 @@
 #include "Language.hpp"
 #include "LanguageController.hpp"
 #include "ThemeController.hpp"
+#include "UpdateChecker.hpp"
 #include "templar/crypto/Identity.hpp"
 
 int main(int argc, char* argv[]) {
@@ -41,12 +42,17 @@ int main(int argc, char* argv[]) {
   templar::phone::ThemeController theme;
   templar::phone::BiometricBridge biometric;
   templar::phone::LanguageController language_ctl;
+  templar::UpdateChecker updateChecker;
+  // En segundo plano, no bloquea el arranque -- ver el comentario de
+  // checkIfDue() (como mucho una vez al dia, silenciosa si falla).
+  updateChecker.checkIfDue();
 
   QQmlApplicationEngine engine;
   engine.rootContext()->setContextProperty("controller", &controller);
   engine.rootContext()->setContextProperty("theme", &theme);
   engine.rootContext()->setContextProperty("biometric", &biometric);
   engine.rootContext()->setContextProperty("language", &language_ctl);
+  engine.rootContext()->setContextProperty("updateChecker", &updateChecker);
 
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreationFailed, &app,

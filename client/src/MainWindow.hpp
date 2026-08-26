@@ -18,6 +18,7 @@
 #include "MessagePayload.hpp"
 #include "NetworkManager.hpp"
 #include "Theme.hpp"
+#include "UpdateChecker.hpp"
 #include "templar/crypto/FileCrypto.hpp"
 
 class QLineEdit;
@@ -143,6 +144,11 @@ class MainWindow : public QWidget {
   void onNetDisconnected();
   void onNetError(QString message);
   void onFrameReceived(templar::proto::MsgType type, templar::proto::Bytes payload);
+
+  // Se dispara cuando updateChecker_ encuentra un release mas nuevo que
+  // este binario (comprobacion en segundo plano, ver el constructor) --
+  // solo muestra el banner, nunca interrumpe con un dialogo.
+  void onUpdateAvailable();
 
  private:
   static constexpr const char* kSystemKey = "";
@@ -393,6 +399,7 @@ class MainWindow : public QWidget {
   CryptoEngine crypto_;
   LocalStore localStore_;
   Theme theme_;
+  templar::UpdateChecker updateChecker_;
   std::string myUsername_;
   std::string pendingLoginPassword_;
   bool loggedIn_ = false;
@@ -498,6 +505,11 @@ class MainWindow : public QWidget {
   QLabel* transferLabel_;
 
   QLabel* statusLabel_;
+  // Oculto salvo que updateChecker_ encuentre una version mas nueva -- ver
+  // onUpdateAvailable(). Vive en la fila inferior (fuera del
+  // QStackedWidget), visible tanto en login como en chat, mismo criterio
+  // que statusLabel_/closeButton_.
+  QLabel* updateBanner_;
   QPushButton* settingsButton_;
   // Visible en login Y en chat (vive fuera del QStackedWidget, en la fila
   // inferior): para quien no tenga un boton de cerrar en la decoracion de

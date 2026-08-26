@@ -36,37 +36,42 @@
         <translation>Connected as: %1</translation>
     </message>
     <message>
-        <location filename="../qml/ChatListPage.qml" line="113" />
+        <location filename="../qml/ChatListPage.qml" line="105" />
+        <source>Hay una version nueva disponible (%1). &lt;a href='%2'&gt;Descargar&lt;/a&gt;</source>
+        <translation>A new version is available (%1). &lt;a href='%2'&gt;Download&lt;/a&gt;</translation>
+    </message>
+    <message>
+        <location filename="../qml/ChatListPage.qml" line="129" />
         <source>Invitaciones pendientes</source>
         <translation>Pending invitations</translation>
     </message>
     <message>
-        <location filename="../qml/ChatListPage.qml" line="128" />
+        <location filename="../qml/ChatListPage.qml" line="144" />
         <source>%1 (invitado por %2)</source>
         <translation>%1 (invited by %2)</translation>
     </message>
     <message>
-        <location filename="../qml/ChatListPage.qml" line="134" />
+        <location filename="../qml/ChatListPage.qml" line="150" />
         <source>Aceptar</source>
         <translation>Accept</translation>
     </message>
     <message>
-        <location filename="../qml/ChatListPage.qml" line="139" />
+        <location filename="../qml/ChatListPage.qml" line="155" />
         <source>Rechazar</source>
         <translation>Reject</translation>
     </message>
     <message>
-        <location filename="../qml/ChatListPage.qml" line="229" />
+        <location filename="../qml/ChatListPage.qml" line="245" />
         <source>Nuevo chat</source>
         <translation>New chat</translation>
     </message>
     <message>
-        <location filename="../qml/ChatListPage.qml" line="233" />
+        <location filename="../qml/ChatListPage.qml" line="249" />
         <source>Nuevo grupo</source>
         <translation>New group</translation>
     </message>
     <message>
-        <location filename="../qml/ChatListPage.qml" line="239" />
+        <location filename="../qml/ChatListPage.qml" line="255" />
         <source>Conectado a %1</source>
         <translation>Connected to %1</translation>
     </message>
@@ -245,6 +250,11 @@
         <source>Usar huella</source>
         <translation>Use fingerprint</translation>
     </message>
+    <message>
+        <location filename="../qml/LoginPage.qml" line="167" />
+        <source>Hay una version nueva disponible (%1). &lt;a href='%2'&gt;Descargar&lt;/a&gt;</source>
+        <translation>A new version is available (%1). &lt;a href='%2'&gt;Download&lt;/a&gt;</translation>
+    </message>
 </context>
 <context>
     <name>NewChatDialog</name>
@@ -353,7 +363,22 @@
         <translation>The language change takes effect after restarting the app.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsDialog.qml" line="306" />
+        <location filename="../qml/SettingsDialog.qml" line="298" />
+        <source>Version</source>
+        <translation>Version</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsDialog.qml" line="309" />
+        <source>Version %1 instalada -- hay una nueva: %2. &lt;a href='%3'&gt;Descargar&lt;/a&gt;</source>
+        <translation>Version %1 installed -- there's a new one: %2. &lt;a href='%3'&gt;Download&lt;/a&gt;</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsDialog.qml" line="312" />
+        <source>Version %1 instalada. &lt;a href='%2'&gt;Ver ultima version en GitHub&lt;/a&gt;</source>
+        <translation>Version %1 installed. &lt;a href='%2'&gt;See latest version on GitHub&lt;/a&gt;</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsDialog.qml" line="330" />
         <source>Inicio de sesión con huella</source>
         <translation>Fingerprint login</translation>
     </message>
@@ -389,19 +414,19 @@
     <name>templar::phone::ClientController</name>
     <message>
         <location filename="../src/ClientController.cpp" line="81" />
-        <location filename="../src/ClientController.cpp" line="1233" />
+        <location filename="../src/ClientController.cpp" line="1237" />
         <source>Sistema</source>
         <translation>System</translation>
     </message>
     <message>
         <location filename="../src/ClientController.cpp" line="172" />
-        <location filename="../src/ClientController.cpp" line="743" />
+        <location filename="../src/ClientController.cpp" line="745" />
         <source>Manda primero un mensaje de texto a %1 para establecer la conversacion antes de enviar archivos.</source>
         <translation>Send a text message to %1 first to establish the conversation before sending files.</translation>
     </message>
     <message>
         <location filename="../src/ClientController.cpp" line="178" />
-        <location filename="../src/ClientController.cpp" line="749" />
+        <location filename="../src/ClientController.cpp" line="751" />
         <source>Ya hay una transferencia de archivo en curso, espera a que termine.</source>
         <translation>There is already a file transfer in progress, wait for it to finish.</translation>
     </message>
@@ -411,251 +436,251 @@
         <translation>Connecting...</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="761" />
+        <location filename="../src/ClientController.cpp" line="763" />
         <source>No se pudo abrir el archivo seleccionado para leerlo.</source>
         <translation>Could not open the selected file to read it.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="766" />
+        <location filename="../src/ClientController.cpp" line="768" />
         <source>El archivo supera el limite de %1 MB de esta version.</source>
         <translation>The file exceeds the %1 MB limit of this version.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="774" />
+        <location filename="../src/ClientController.cpp" line="776" />
         <source>archivo_enviado</source>
         <translation>file_sent</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="786" />
+        <location filename="../src/ClientController.cpp" line="788" />
         <source>Subiendo: %1</source>
         <translation>Uploading: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="796" />
+        <location filename="../src/ClientController.cpp" line="798" />
         <source>No se pudo leer el archivo seleccionado.</source>
         <translation>Could not read the selected file.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="809" />
+        <location filename="../src/ClientController.cpp" line="811" />
         <source>archivo</source>
         <translation>file</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="813" />
+        <location filename="../src/ClientController.cpp" line="815" />
         <source>No se pudo guardar una copia local del archivo.</source>
         <translation>Could not save a local copy of the file.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="847" />
+        <location filename="../src/ClientController.cpp" line="849" />
         <source>No se pudo abrir el archivo: </source>
         <translation>Could not open the file: </translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="905" />
-        <location filename="../src/ClientController.cpp" line="917" />
-        <location filename="../src/ClientController.cpp" line="926" />
+        <location filename="../src/ClientController.cpp" line="907" />
+        <location filename="../src/ClientController.cpp" line="919" />
+        <location filename="../src/ClientController.cpp" line="928" />
         <source>Archivo enviado: %1</source>
         <translation>File sent: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="940" />
+        <location filename="../src/ClientController.cpp" line="943" />
         <source>Se rechaza un puntero de archivo invalido de %1.</source>
         <translation>Rejecting an invalid file pointer from %1.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="980" />
+        <location filename="../src/ClientController.cpp" line="983" />
         <source>Descargar</source>
         <translation>Download</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="989" />
+        <location filename="../src/ClientController.cpp" line="993" />
         <source>Ese enlace de descarga ya no esta disponible en esta sesion.</source>
         <translation>That download link is no longer available in this session.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="993" />
+        <location filename="../src/ClientController.cpp" line="997" />
         <source>Ya hay una descarga en curso, espera a que termine.</source>
         <translation>There is already a download in progress, wait for it to finish.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1014" />
+        <location filename="../src/ClientController.cpp" line="1018" />
         <source>archivo_recibido</source>
         <translation>file_received</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1043" />
+        <location filename="../src/ClientController.cpp" line="1047" />
         <source>No se pudo crear el archivo de destino para la descarga.</source>
         <translation>Could not create the destination file for the download.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1060" />
+        <location filename="../src/ClientController.cpp" line="1064" />
         <source>Descargando: %1</source>
         <translation>Downloading: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1084" />
+        <location filename="../src/ClientController.cpp" line="1088" />
         <source>[ALERTA] Fallo descifrando '%1': %2</source>
         <translation>[WARNING] Failed decrypting '%1': %2</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1114" />
+        <location filename="../src/ClientController.cpp" line="1118" />
         <source>Galeria</source>
         <translation>Gallery</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1114" />
+        <location filename="../src/ClientController.cpp" line="1118" />
         <source>Descargas</source>
         <translation>Downloads</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1118" />
+        <location filename="../src/ClientController.cpp" line="1122" />
         <source>Archivo '%1' recibido y verificado -&gt; %2</source>
         <translation>File '%1' received and verified -&gt; %2</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1121" />
+        <location filename="../src/ClientController.cpp" line="1125" />
         <source>[ALERTA] El archivo '%1' llego incompleto (se corto en transito) -- no te fies del contenido.</source>
         <translation>[WARNING] The file '%1' arrived incomplete (cut off in transit) -- do not trust its contents.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1145" />
+        <location filename="../src/ClientController.cpp" line="1149" />
         <source>[ALERTA] No se pudo descargar '%1': %2</source>
         <translation>[WARNING] Could not download '%1': %2</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1181" />
+        <location filename="../src/ClientController.cpp" line="1185" />
         <source>El usuario no puede estar vacio y la contrasena necesita al menos 8 caracteres.</source>
         <translation>The username cannot be empty and the password needs at least 8 characters.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1204" />
-        <location filename="../src/ClientController.cpp" line="1205" />
+        <location filename="../src/ClientController.cpp" line="1208" />
+        <location filename="../src/ClientController.cpp" line="1209" />
         <source>Conectado.</source>
         <translation>Connected.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1212" />
+        <location filename="../src/ClientController.cpp" line="1216" />
         <source>Desconectado</source>
         <translation>Disconnected</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1235" />
+        <location filename="../src/ClientController.cpp" line="1239" />
         <source>Conexion cerrada.</source>
         <translation>Connection closed.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1254" />
+        <location filename="../src/ClientController.cpp" line="1258" />
         <source>Error de red: %1</source>
         <translation>Network error: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1262" />
+        <location filename="../src/ClientController.cpp" line="1266" />
         <source>Registro exitoso. Ya puedes iniciar sesion.</source>
         <translation>Registration successful. You can now log in.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1263" />
+        <location filename="../src/ClientController.cpp" line="1267" />
         <source>Registro exitoso como %1.</source>
         <translation>Registration successful as %1.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1288" />
+        <location filename="../src/ClientController.cpp" line="1292" />
         <source>Error de registro: %1</source>
         <translation>Registration error: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1295" />
+        <location filename="../src/ClientController.cpp" line="1299" />
         <source>Sesion iniciada como %1.</source>
         <translation>Logged in as %1.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1301" />
+        <location filename="../src/ClientController.cpp" line="1305" />
         <source>Tú</source>
         <translation>You</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1312" />
+        <location filename="../src/ClientController.cpp" line="1316" />
         <source>Sesion iniciada, pero no se pudo desbloquear el almacen local (¿cambiaste la contrasena desde otro dispositivo?).</source>
         <translation>Logged in, but local storage could not be unlocked (did you change the password from another device?).</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1355" />
+        <location filename="../src/ClientController.cpp" line="1359" />
         <source>Conectado como %1 (almacen local restaurado).</source>
         <translation>Connected as %1 (local storage restored).</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1357" />
+        <location filename="../src/ClientController.cpp" line="1361" />
         <source>Almacen local desbloqueado: identidad, sesiones e historial restaurados.</source>
         <translation>Local storage unlocked: identity, sessions and history restored.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1359" />
+        <location filename="../src/ClientController.cpp" line="1363" />
         <source>Sesion iniciada, pero fallo restaurando el almacen local: %1</source>
         <translation>Logged in, but restoring local storage failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1371" />
+        <location filename="../src/ClientController.cpp" line="1375" />
         <source>Conectado como %1.</source>
         <translation>Connected as %1.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1382" />
+        <location filename="../src/ClientController.cpp" line="1386" />
         <source>Error de inicio de sesion: %1</source>
         <translation>Login error: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1517" />
+        <location filename="../src/ClientController.cpp" line="1521" />
         <source>Bundle de prekeys con tamano invalido, se descarta.</source>
         <translation>Prekey bundle has an invalid size, discarding it.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1528" />
+        <location filename="../src/ClientController.cpp" line="1532" />
         <source>El bundle de '%1' tiene una firma invalida -- posible intermediario. Mensaje NO enviado.</source>
         <translation>The bundle from '%1' has an invalid signature -- possible man-in-the-middle. Message NOT sent.</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1564" />
+        <location filename="../src/ClientController.cpp" line="1568" />
         <source>No se pudo iniciar conversacion: %1</source>
         <translation>Could not start conversation: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1583" />
+        <location filename="../src/ClientController.cpp" line="1587" />
         <source>No se pudo empezar a subir el archivo: %1</source>
         <translation>Could not start uploading the file: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1594" />
+        <location filename="../src/ClientController.cpp" line="1598" />
         <source>Fallo terminando de subir el archivo: %1</source>
         <translation>Failed finishing the file upload: %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1656" />
-        <location filename="../src/ClientController.cpp" line="1722" />
+        <location filename="../src/ClientController.cpp" line="1662" />
+        <location filename="../src/ClientController.cpp" line="1731" />
         <source>Nuevo mensaje</source>
         <translation>New message</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1665" />
+        <location filename="../src/ClientController.cpp" line="1672" />
         <source>Nuevo archivo</source>
         <translation>New file</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1681" />
+        <location filename="../src/ClientController.cpp" line="1688" />
         <source>No se pudo descifrar un mensaje de '%1': %2</source>
         <translation>Could not decrypt a message from '%1': %2</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1731" />
+        <location filename="../src/ClientController.cpp" line="1740" />
         <source>Nuevo archivo de %1</source>
         <translation>New file from %1</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1737" />
+        <location filename="../src/ClientController.cpp" line="1746" />
         <source>No se pudo descifrar un mensaje de grupo de '%1': %2</source>
         <translation>Could not decrypt a group message from '%1': %2</translation>
     </message>
     <message>
-        <location filename="../src/ClientController.cpp" line="1765" />
+        <location filename="../src/ClientController.cpp" line="1774" />
         <source>Error procesando mensaje del servidor: %1</source>
         <translation>Error processing message from server: %1</translation>
     </message>

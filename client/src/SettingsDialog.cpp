@@ -10,7 +10,8 @@
 
 namespace templar::client {
 
-SettingsDialog::SettingsDialog(const Theme& current, QWidget* parent)
+SettingsDialog::SettingsDialog(const Theme& current, const templar::UpdateChecker& updateChecker,
+                               QWidget* parent)
     : QDialog(parent), theme_(current), language_(currentLanguage()) {
   setWindowTitle(tr("Ajustes"));
   setModal(true);
@@ -45,6 +46,23 @@ SettingsDialog::SettingsDialog(const Theme& current, QWidget* parent)
       new QLabel(tr("El cambio de idioma se aplica al reiniciar la app."));
   languageHintLabel->setStyleSheet("color: #888888;");
   layout->addWidget(languageHintLabel);
+
+  layout->addWidget(new QLabel(tr("<b>Version</b>")));
+  auto* versionLabel = new QLabel();
+  versionLabel->setTextFormat(Qt::RichText);
+  versionLabel->setOpenExternalLinks(true);
+  versionLabel->setWordWrap(true);
+  if (updateChecker.updateAvailable()) {
+    versionLabel->setText(
+        tr("Version %1 instalada -- hay una nueva: %2. <a href='%3'>Descargar</a>")
+            .arg(updateChecker.currentVersion(), updateChecker.latestVersion(),
+                updateChecker.releaseUrl()));
+  } else {
+    versionLabel->setText(
+        tr("Version %1 instalada. <a href='%2'>Ver ultima version en GitHub</a>")
+            .arg(updateChecker.currentVersion(), updateChecker.releaseUrl()));
+  }
+  layout->addWidget(versionLabel);
 
   auto* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
   connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);

@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.20)
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
-project(templar_mk3 CXX C)
+# Fuente unica de verdad de la version -- se compila como constante en los
+# clientes (ver client/src/UpdateChecker.cpp) para compararla contra el
+# ultimo release publicado en GitHub. Subir esto en un commit propio junto
+# con un tag "vX.Y.Z" y un Release de GitHub es lo que activa el aviso de
+# "hay una version nueva" en quien todavia tenga la version anterior.
+project(templar_mk3 VERSION 1.0.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

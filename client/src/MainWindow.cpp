@@ -65,6 +65,11 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
   stack_->setCurrentWidget(loginPage_);
 
   statusLabel_ = new QLabel(tr("Desconectado."));
+  updateBanner_ = new QLabel();
+  updateBanner_->setObjectName("updateBanner");
+  updateBanner_->setTextFormat(Qt::RichText);
+  updateBanner_->setOpenExternalLinks(true);
+  updateBanner_->setVisible(false);
   settingsButton_ = new QPushButton(tr("⚙ Ajustes"));
   closeButton_ = new QPushButton("✕");
   closeButton_->setObjectName("closeButton");
@@ -72,6 +77,7 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
 
   auto* bottomRow = new QHBoxLayout();
   bottomRow->addWidget(statusLabel_, /*stretch=*/1);
+  bottomRow->addWidget(updateBanner_);
   bottomRow->addWidget(settingsButton_);
   bottomRow->addWidget(closeButton_);
 
@@ -125,10 +131,23 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
   fileSendTimer_ = new QTimer(this);
   connect(fileSendTimer_, &QTimer::timeout, this, &MainWindow::sendNextFileChunk);
 
+  connect(&updateChecker_, &templar::UpdateChecker::updateAvailableChanged, this,
+         &MainWindow::onUpdateAvailable);
+  // En segundo plano, no bloquea el arranque -- ver el comentario de
+  // checkIfDue() (como mucho una vez al dia, silenciosa si falla).
+  updateChecker_.checkIfDue();
+
   theme_ = Theme::load();
   applyTheme();
 
   setupTrayIcon();
+}
+
+void MainWindow::onUpdateAvailable() {
+  updateBanner_->setText(
+      tr("Hay una version nueva disponible (%1). <a href='%2'>Descargar</a>")
+          .arg(updateChecker_.latestVersion(), updateChecker_.releaseUrl()));
+  updateBanner_->setVisible(true);
 }
 
 MainWindow::~MainWindow() {
@@ -555,7 +574,7 @@ void MainWindow::applyTheme() {
 }
 
 void MainWindow::onSettingsClicked() {
-  SettingsDialog dialog(theme_, this);
+  SettingsDialog dialog(theme_, updateChecker_, this);
   if (dialog.exec() == QDialog::Accepted) {
     theme_ = dialog.resultTheme();
     theme_.save();

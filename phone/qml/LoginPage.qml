@@ -158,6 +158,22 @@ Page {
             Layout.fillWidth: true
         }
 
+        // Aviso discreto de version nueva -- oculto salvo que
+        // updateChecker (comprobado una vez al arrancar, en segundo plano)
+        // encuentre un release mas nuevo que este binario. Nunca bloquea
+        // nada ni interrumpe con un dialogo, solo un enlace.
+        Label {
+            visible: updateChecker.updateAvailable
+            text: qsTr("Hay una version nueva disponible (%1). <a href='%2'>Descargar</a>")
+                .arg(updateChecker.latestVersion).arg(updateChecker.releaseUrl)
+            textFormat: Text.RichText
+            onLinkActivated: (link) => Qt.openUrlExternally(link)
+            wrapMode: Text.WordWrap
+            color: theme.accent
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+        }
+
         Item { Layout.fillHeight: true }
 
         // Fila inferior: mismo patron que bottomRow en el cliente de
