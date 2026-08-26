@@ -301,17 +301,18 @@ Dialog {
             Layout.topMargin: 8
         }
 
-        // Enlace fijo, siempre visible (haya o no version nueva) --
-        // updateChecker.apkDownloadUrl baja el .apk directo (sin pasar por
-        // la pagina del release, que tambien trae el zip/tar.gz del codigo
-        // fuente que genera GitHub solo -- facil de bajar por error).
+        // Enlace fijo, siempre visible (haya o no version nueva) -- a la
+        // pagina del release, no a una descarga directa del .apk: Android
+        // (Play Protect/Safe Browsing) se queda colgado al 100% con una
+        // descarga directa iniciada fuera de un navegador real, algo que no
+        // pasa si el usuario pincha "Descargar" desde la propia pagina.
         Label {
             text: updateChecker.updateAvailable
                 ? qsTr("Version %1 instalada -- hay una nueva: %2. <a href='%3'>Descargar</a>")
                       .arg(updateChecker.currentVersion).arg(updateChecker.latestVersion)
-                      .arg(updateChecker.apkDownloadUrl)
+                      .arg(updateChecker.releaseUrl)
                 : qsTr("Version %1 instalada. <a href='%2'>Ver ultima version en GitHub</a>")
-                      .arg(updateChecker.currentVersion).arg(updateChecker.apkDownloadUrl)
+                      .arg(updateChecker.currentVersion).arg(updateChecker.releaseUrl)
             textFormat: Text.RichText
             onLinkActivated: (link) => Qt.openUrlExternally(link)
             wrapMode: Text.WordWrap

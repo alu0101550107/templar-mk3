@@ -103,7 +103,7 @@ Page {
         Label {
             visible: updateChecker.updateAvailable
             text: qsTr("Hay una version nueva disponible (%1). <a href='%2'>Descargar</a>")
-                .arg(updateChecker.latestVersion).arg(updateChecker.apkDownloadUrl)
+                .arg(updateChecker.latestVersion).arg(updateChecker.releaseUrl)
             textFormat: Text.RichText
             onLinkActivated: (link) => Qt.openUrlExternally(link)
             wrapMode: Text.WordWrap
