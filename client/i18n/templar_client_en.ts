@@ -64,203 +64,208 @@
 <context>
     <name>templar::client::MainWindow</name>
     <message>
-        <location filename="../src/MainWindow.cpp" line="67" />
-        <location filename="../src/MainWindow.cpp" line="1744" />
+        <location filename="../src/MainWindow.cpp" line="78" />
+        <location filename="../src/MainWindow.cpp" line="1858" />
         <source>Desconectado.</source>
         <translation>Disconnected.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="73" />
+        <location filename="../src/MainWindow.cpp" line="84" />
         <source>⚙ Ajustes</source>
         <translation>⚙ Settings</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="76" />
+        <location filename="../src/MainWindow.cpp" line="87" />
         <source>Cerrar (sigue en la bandeja del sistema)</source>
         <translation>Close (stays in the system tray)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="91" />
+        <location filename="../src/MainWindow.cpp" line="102" />
         <source>Sistema</source>
         <translation>System</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="148" />
+        <location filename="../src/MainWindow.cpp" line="160" />
         <source>Hay una version nueva disponible (%1). &lt;a href='%2'&gt;Descargar&lt;/a&gt;</source>
         <translation>A new version is available (%1). &lt;a href='%2'&gt;Download&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="174" />
+        <location filename="../src/MainWindow.cpp" line="186" />
         <source>Abrir Templar</source>
         <translation>Open Templar</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="175" />
+        <location filename="../src/MainWindow.cpp" line="187" />
         <source>Salir</source>
         <translation>Exit</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="200" />
+        <location filename="../src/MainWindow.cpp" line="212" />
         <source>Templar sigue activo</source>
         <translation>Templar is still running</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="201" />
+        <location filename="../src/MainWindow.cpp" line="213" />
         <source>Sigue conectado en segundo plano. Haz clic aqui para volver a abrirlo, o usa 'Salir' en el menu de la bandeja para cerrarlo del todo.</source>
         <translation>It stays connected in the background. Click here to reopen it, or use 'Exit' in the tray menu to close it completely.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="222" />
+        <location filename="../src/MainWindow.cpp" line="235" />
         <source>No se pudo abrir el archivo: </source>
         <translation>Could not open the file: </translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="265" />
+        <location filename="../src/MainWindow.cpp" line="288" />
         <source>Conectar</source>
         <translation>Connect</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="269" />
+        <location filename="../src/MainWindow.cpp" line="292" />
         <source>Servidor:</source>
         <translation>Server:</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="271" />
+        <location filename="../src/MainWindow.cpp" line="294" />
         <source>Puerto:</source>
         <translation>Port:</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="277" />
+        <location filename="../src/MainWindow.cpp" line="300" />
         <source>usuario</source>
         <translation>username</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="280" />
+        <location filename="../src/MainWindow.cpp" line="303" />
         <source>contrasena (min. 8 caracteres)</source>
         <translation>password (min. 8 characters)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="282" />
+        <location filename="../src/MainWindow.cpp" line="305" />
         <source>Registrarse</source>
         <translation>Register</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="284" />
+        <location filename="../src/MainWindow.cpp" line="307" />
         <source>Iniciar sesion</source>
         <translation>Log in</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="313" />
+        <location filename="../src/MainWindow.cpp" line="336" />
         <source>Desconectar</source>
         <translation>Disconnect</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="317" />
+        <location filename="../src/MainWindow.cpp" line="340" />
         <source>Buscar en esta conversacion</source>
         <translation>Search this conversation</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="328" />
+        <location filename="../src/MainWindow.cpp" line="351" />
         <source>usuario...</source>
         <translation>username...</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="329" />
+        <location filename="../src/MainWindow.cpp" line="352" />
         <source>+ Nuevo chat</source>
         <translation>+ New chat</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="336" />
+        <location filename="../src/MainWindow.cpp" line="359" />
         <source>+ Nuevo grupo</source>
         <translation>+ New group</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="343" />
+        <location filename="../src/MainWindow.cpp" line="366" />
         <source>Invitaciones pendientes</source>
         <translation>Pending invitations</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="350" />
+        <location filename="../src/MainWindow.cpp" line="373" />
         <source>Aceptar</source>
         <translation>Accept</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="353" />
+        <location filename="../src/MainWindow.cpp" line="376" />
         <source>Rechazar</source>
         <translation>Reject</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="362" />
+        <location filename="../src/MainWindow.cpp" line="385" />
         <source>Conversaciones</source>
         <translation>Conversations</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="383" />
+        <location filename="../src/MainWindow.cpp" line="406" />
         <source>Buscar en esta conversacion...</source>
         <translation>Search this conversation...</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="386" />
+        <location filename="../src/MainWindow.cpp" line="409" />
         <source>Coincidencia anterior</source>
         <translation>Previous match</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="389" />
+        <location filename="../src/MainWindow.cpp" line="412" />
         <source>Coincidencia siguiente</source>
         <translation>Next match</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="409" />
+        <location filename="../src/MainWindow.cpp" line="432" />
         <source>Anadir miembro...</source>
         <translation>Add member...</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="412" />
+        <location filename="../src/MainWindow.cpp" line="435" />
         <source>Expulsar...</source>
         <translation>Remove...</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="415" />
+        <location filename="../src/MainWindow.cpp" line="438" />
         <source>Salir del grupo</source>
         <translation>Leave group</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="427" />
+        <location filename="../src/MainWindow.cpp" line="463" />
         <source>mensaje...</source>
         <translation>message...</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="430" />
+        <location filename="../src/MainWindow.cpp" line="466" />
         <source>Insertar emoji</source>
         <translation>Insert emoji</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="433" />
+        <location filename="../src/MainWindow.cpp" line="469" />
         <source>Enviar archivo</source>
         <translation>Send file</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="434" />
+        <location filename="../src/MainWindow.cpp" line="470" />
         <source>Enviar</source>
         <translation>Send</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="506" />
+        <location filename="../src/MainWindow.cpp" line="570" />
         <source>SISTEMA</source>
         <translation>SYSTEM</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="586" />
+        <location filename="../src/MainWindow.cpp" line="650" />
         <source>Idioma cambiado. Reinicia Templar para que se aplique.</source>
         <translation>Language changed. Restart Templar for it to take effect.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="717" />
+        <location filename="../src/MainWindow.cpp" line="743" />
+        <source>Respondiendo a %1: %2</source>
+        <translation>Replying to %1: %2</translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="808" />
         <source>Aviso: el remitente dice haber usado una one-time prekey que no tenemos en local (almacen desincronizado) -- se cae a modo de 3-DH para este mensaje.</source>
         <translation>Notice: the sender says it used a one-time prekey we don't have locally (storage out of sync) -- falling back to 3-DH mode for this message.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/MainWindow.cpp" line="835" />
+        <location filename="../src/MainWindow.cpp" line="929" />
         <source>%n resultado(s)</source>
         <translation>
             <numerusform>%n result</numerusform>
@@ -268,311 +273,311 @@
         </translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="835" />
+        <location filename="../src/MainWindow.cpp" line="929" />
         <source>sin resultados</source>
         <translation>no results</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1061" />
+        <location filename="../src/MainWindow.cpp" line="1161" />
         <source>Grupo: %1 miembro(s) -- admin: %2</source>
         <translation>Group: %1 member(s) -- admin: %2</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1118" />
+        <location filename="../src/MainWindow.cpp" line="1218" />
         <source>Expulsar miembro</source>
         <translation>Remove member</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1118" />
+        <location filename="../src/MainWindow.cpp" line="1218" />
         <source>Elige a quien expulsar:</source>
         <translation>Choose who to remove:</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1143" />
+        <location filename="../src/MainWindow.cpp" line="1243" />
         <source>Has salido del grupo '%1'.</source>
         <translation>You left the group '%1'.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1151" />
+        <location filename="../src/MainWindow.cpp" line="1251" />
         <source>Anadir miembro</source>
         <translation>Add member</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1151" />
+        <location filename="../src/MainWindow.cpp" line="1251" />
         <source>Usuario a invitar:</source>
         <translation>User to invite:</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1165" />
+        <location filename="../src/MainWindow.cpp" line="1265" />
         <source>%1 (invitado por %2)</source>
         <translation>%1 (invited by %2)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1171" />
+        <location filename="../src/MainWindow.cpp" line="1271" />
         <source>%1 te invito al grupo '%2' -- puedes aceptarla o rechazarla en el panel de invitaciones de la barra lateral.</source>
         <translation>%1 invited you to the group '%2' -- you can accept or reject it in the pending invitations panel in the sidebar.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1242" />
+        <location filename="../src/MainWindow.cpp" line="1342" />
         <source>Selecciona un archivo para enviar</source>
         <translation>Select a file to send</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1251" />
+        <location filename="../src/MainWindow.cpp" line="1351" />
         <source>Selecciona una conversacion antes de adjuntar un archivo.</source>
         <translation>Select a conversation before attaching a file.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1260" />
+        <location filename="../src/MainWindow.cpp" line="1360" />
         <source>Manda primero un mensaje de texto a %1 para establecer la conversacion antes de enviar archivos.</source>
         <translation>Send a text message to %1 first to establish the conversation before sending files.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1270" />
+        <location filename="../src/MainWindow.cpp" line="1370" />
         <source>Ya hay una transferencia de archivo en curso, espera a que termine.</source>
         <translation>There is already a file transfer in progress, wait for it to finish.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1277" />
-        <location filename="../src/MainWindow.cpp" line="1318" />
+        <location filename="../src/MainWindow.cpp" line="1377" />
+        <location filename="../src/MainWindow.cpp" line="1418" />
         <source>No se pudo leer el archivo seleccionado.</source>
         <translation>Could not read the selected file.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1281" />
+        <location filename="../src/MainWindow.cpp" line="1381" />
         <source>El archivo supera el limite de %1 MB de esta version.</source>
         <translation>The file exceeds the %1 MB limit of this version.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1288" />
+        <location filename="../src/MainWindow.cpp" line="1388" />
         <source>No se pudo abrir el archivo seleccionado para leerlo.</source>
         <translation>Could not open the selected file to read it.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1307" />
+        <location filename="../src/MainWindow.cpp" line="1407" />
         <source>Subiendo: %1</source>
         <translation>Uploading: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1331" />
+        <location filename="../src/MainWindow.cpp" line="1431" />
         <source>No se pudo guardar una copia local del archivo.</source>
         <translation>Could not save a local copy of the file.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1400" />
-        <location filename="../src/MainWindow.cpp" line="1415" />
-        <location filename="../src/MainWindow.cpp" line="1422" />
+        <location filename="../src/MainWindow.cpp" line="1500" />
+        <location filename="../src/MainWindow.cpp" line="1515" />
+        <location filename="../src/MainWindow.cpp" line="1522" />
         <source>Archivo enviado: %1</source>
         <translation>File sent: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1435" />
+        <location filename="../src/MainWindow.cpp" line="1535" />
         <source>Se rechaza un puntero de archivo invalido de %1.</source>
         <translation>Rejecting an invalid file pointer from %1.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1475" />
+        <location filename="../src/MainWindow.cpp" line="1575" />
         <source>Descargar</source>
         <translation>Download</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1484" />
+        <location filename="../src/MainWindow.cpp" line="1584" />
         <source>Ese enlace de descarga ya no esta disponible en esta sesion.</source>
         <translation>That download link is no longer available in this session.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1488" />
+        <location filename="../src/MainWindow.cpp" line="1588" />
         <source>Ya hay una descarga en curso, espera a que termine.</source>
         <translation>There is already a download in progress, wait for it to finish.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1514" />
+        <location filename="../src/MainWindow.cpp" line="1614" />
         <source>archivo_recibido</source>
         <translation>file_received</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1519" />
+        <location filename="../src/MainWindow.cpp" line="1619" />
         <source>No se pudo crear el archivo de destino para la descarga.</source>
         <translation>Could not create the destination file for the download.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1533" />
+        <location filename="../src/MainWindow.cpp" line="1633" />
         <source>Descargando: %1</source>
         <translation>Downloading: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1559" />
+        <location filename="../src/MainWindow.cpp" line="1659" />
         <source>[ALERTA] Fallo descifrando '%1': %2</source>
         <translation>[WARNING] Failed decrypting '%1': %2</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1579" />
+        <location filename="../src/MainWindow.cpp" line="1679" />
         <source>Archivo '%1' recibido y verificado -&gt; %2</source>
         <translation>File '%1' received and verified -&gt; %2</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1582" />
+        <location filename="../src/MainWindow.cpp" line="1682" />
         <source>[ALERTA] El archivo '%1' llego incompleto (se corto en transito) -- no te fies del contenido.</source>
         <translation>[WARNING] The file '%1' arrived incomplete (cut off in transit) -- do not trust its contents.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1598" />
+        <location filename="../src/MainWindow.cpp" line="1698" />
         <source>[ALERTA] No se pudo descargar '%1': %2</source>
         <translation>[WARNING] Could not download '%1': %2</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1643" />
+        <location filename="../src/MainWindow.cpp" line="1743" />
         <source>Conectando...</source>
         <translation>Connecting...</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1672" />
+        <location filename="../src/MainWindow.cpp" line="1772" />
         <source>El usuario no puede estar vacio y la contrasena necesita al menos 8 caracteres.</source>
         <translation>The username cannot be empty and the password needs at least 8 characters.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1736" />
-        <location filename="../src/MainWindow.cpp" line="1737" />
+        <location filename="../src/MainWindow.cpp" line="1850" />
+        <location filename="../src/MainWindow.cpp" line="1851" />
         <source>Conectado a %1</source>
         <translation>Connected to %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1745" />
+        <location filename="../src/MainWindow.cpp" line="1859" />
         <source>Conexion cerrada.</source>
         <translation>Connection closed.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1753" />
+        <location filename="../src/MainWindow.cpp" line="1867" />
         <source>Error: %1</source>
         <translation>Error: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1754" />
+        <location filename="../src/MainWindow.cpp" line="1868" />
         <source>Error de red: %1</source>
         <translation>Network error: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1762" />
+        <location filename="../src/MainWindow.cpp" line="1876" />
         <source>Registro exitoso. Ahora puedes iniciar sesion.</source>
         <translation>Registration successful. You can now log in.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1791" />
+        <location filename="../src/MainWindow.cpp" line="1905" />
         <source>Error de registro: %1</source>
         <translation>Registration error: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1799" />
+        <location filename="../src/MainWindow.cpp" line="1913" />
         <source>Conectado como: %1</source>
         <translation>Connected as: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1800" />
+        <location filename="../src/MainWindow.cpp" line="1914" />
         <source>Sesion iniciada como %1.</source>
         <translation>Logged in as %1.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1807" />
+        <location filename="../src/MainWindow.cpp" line="1921" />
         <source>Tú</source>
         <translation>You</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1815" />
+        <location filename="../src/MainWindow.cpp" line="1929" />
         <source>No se pudo desbloquear el almacen local (¿cambiaste la contrasena de cuenta desde otro dispositivo?). Esta sesion no se guardara.</source>
         <translation>Could not unlock local storage (did you change the account password from another device?). This session will not be saved.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1854" />
+        <location filename="../src/MainWindow.cpp" line="1968" />
         <source>Almacen local desbloqueado: identidad, sesiones e historial restaurados.</source>
         <translation>Local storage unlocked: identity, sessions and history restored.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1856" />
+        <location filename="../src/MainWindow.cpp" line="1970" />
         <source>No se pudo restaurar el almacen local por completo: %1</source>
         <translation>Could not fully restore local storage: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1874" />
+        <location filename="../src/MainWindow.cpp" line="1988" />
         <source>Error de inicio de sesion: %1</source>
         <translation>Login error: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1895" />
+        <location filename="../src/MainWindow.cpp" line="2009" />
         <source>Bundle de prekeys con tamano invalido, se descarta.</source>
         <translation>Prekey bundle has an invalid size, discarding it.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1906" />
+        <location filename="../src/MainWindow.cpp" line="2020" />
         <source>El bundle de '%1' tiene una firma invalida -- posible intermediario. Mensaje NO enviado.</source>
         <translation>The bundle from '%1' has an invalid signature -- possible man-in-the-middle. Message NOT sent.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1948" />
+        <location filename="../src/MainWindow.cpp" line="2063" />
         <source>No se pudo iniciar conversacion: %1</source>
         <translation>Could not start conversation: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1964" />
+        <location filename="../src/MainWindow.cpp" line="2079" />
         <source>No se pudo empezar a subir el archivo: %1</source>
         <translation>Could not start uploading the file: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="1976" />
+        <location filename="../src/MainWindow.cpp" line="2091" />
         <source>Fallo terminando de subir el archivo: %1</source>
         <translation>Failed finishing the file upload: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2034" />
+        <location filename="../src/MainWindow.cpp" line="2152" />
         <source>Nuevo mensaje</source>
         <translation>New message</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2045" />
+        <location filename="../src/MainWindow.cpp" line="2163" />
         <source>Nuevo archivo</source>
         <translation>New file</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2100" />
+        <location filename="../src/MainWindow.cpp" line="2218" />
         <source>Grupo '%1' creado.</source>
         <translation>Group '%1' created.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2133" />
+        <location filename="../src/MainWindow.cpp" line="2251" />
         <source>%1 se unio al grupo.</source>
         <translation>%1 joined the group.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2147" />
+        <location filename="../src/MainWindow.cpp" line="2265" />
         <source>Has sido expulsado de un grupo.</source>
         <translation>You have been removed from a group.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2154" />
+        <location filename="../src/MainWindow.cpp" line="2272" />
         <source>%1 fue expulsado del grupo.</source>
         <translation>%1 was removed from the group.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2175" />
+        <location filename="../src/MainWindow.cpp" line="2293" />
         <source>%1 salio del grupo.</source>
         <translation>%1 left the group.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2210" />
+        <location filename="../src/MainWindow.cpp" line="2329" />
         <source>Nuevo mensaje de %1</source>
         <translation>New message from %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2219" />
+        <location filename="../src/MainWindow.cpp" line="2338" />
         <source>Nuevo archivo de %1</source>
         <translation>New file from %1</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2279" />
+        <location filename="../src/MainWindow.cpp" line="2398" />
         <source>Error de grupo (%1): %2</source>
         <translation>Group error (%1): %2</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow.cpp" line="2286" />
+        <location filename="../src/MainWindow.cpp" line="2405" />
         <source>Error procesando mensaje del servidor: %1</source>
         <translation>Error processing message from server: %1</translation>
     </message>

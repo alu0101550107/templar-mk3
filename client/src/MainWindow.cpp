@@ -46,6 +46,17 @@ const QPixmap& logoPixmap() {
   static const QPixmap pixmap(":/great_helmet_logo.png");
   return pixmap;
 }
+
+// Fragmento a guardar/mostrar cuando se cita un mensaje al responder --
+// recortado aqui, al construir la cita, para no ir arrastrando mensajes
+// enteros (posiblemente muy largos) dentro de cada respuesta.
+constexpr int kQuoteMaxChars = 80;
+QString truncatedForQuote(const QString& text) {
+  QString oneLine = text;
+  oneLine.replace('\n', ' ');
+  if (oneLine.size() <= kQuoteMaxChars) return oneLine;
+  return oneLine.left(kQuoteMaxChars) + "…";
+}
 }  // namespace
 
 namespace templar::client {
@@ -114,6 +125,7 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
   // close() dispara un QCloseEvent normal -- pasa por closeEvent() como si
   // se hubiera pulsado la X nativa de la ventana, sin duplicar esa logica.
   connect(closeButton_, &QPushButton::clicked, this, &QWidget::close);
+  connect(replyBarCloseButton_, &QPushButton::clicked, this, &MainWindow::cancelReply);
   connect(searchToggleButton_, &QPushButton::clicked, this, &MainWindow::onSearchToggleClicked);
   connect(searchCloseButton_, &QPushButton::clicked, this, &MainWindow::closeSearchBar);
   connect(searchEdit_, &QLineEdit::textChanged, this, &MainWindow::onSearchTextChanged);
@@ -211,6 +223,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
       QString anchor = chatView_->anchorAt(mouseEvent->pos());
       static const QString kDownloadPrefix = "templar-download:";
       static const QString kSelfFilePrefix = "templar-selffile:";
+      static const QString kReplyPrefix = "templar-reply:";
       if (anchor.startsWith(kDownloadPrefix)) {
         startBlobDownload(anchor.mid(kDownloadPrefix.size()).toStdString());
         return true;  // consumido: no dejar que QTextEdit intente seleccionar texto
@@ -220,6 +233,16 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
             QUrl::fromPercentEncoding(anchor.mid(kSelfFilePrefix.size()).toUtf8());
         if (!QDesktopServices::openUrl(QUrl::fromLocalFile(path))) {
           logSystem(tr("No se pudo abrir el archivo: ") + path);
+        }
+        return true;
+      }
+      if (anchor.startsWith(kReplyPrefix)) {
+        QString rest = anchor.mid(kReplyPrefix.size());
+        int sep = rest.indexOf('|');
+        if (sep >= 0) {
+          QString sender = QUrl::fromPercentEncoding(rest.left(sep).toUtf8());
+          QString text = QUrl::fromPercentEncoding(rest.mid(sep + 1).toUtf8());
+          startReply(sender, text);
         }
         return true;
       }
@@ -422,6 +445,19 @@ QWidget* MainWindow::buildChatPage() {
   groupHeaderRow->addWidget(kickButton_);
   groupHeaderRow->addWidget(leaveGroupButton_);
 
+  replyBarLabel_ = new QLabel();
+  replyBarLabel_->setObjectName("replyBarLabel");
+  replyBarLabel_->setWordWrap(true);
+  replyBarCloseButton_ = new QPushButton("✕");
+  replyBarCloseButton_->setObjectName("replyBarCloseButton");
+  auto* replyBarRow = new QHBoxLayout();
+  replyBarRow->addWidget(replyBarLabel_, /*stretch=*/1);
+  replyBarRow->addWidget(replyBarCloseButton_);
+  replyBarWidget_ = new QWidget();
+  replyBarWidget_->setObjectName("replyBarWidget");
+  replyBarWidget_->setLayout(replyBarRow);
+  replyBarWidget_->setVisible(false);
+
   messageEdit_ = new QLineEdit();
   messageEdit_->setObjectName("messageEdit");
   messageEdit_->setPlaceholderText(tr("mensaje..."));
@@ -457,6 +493,7 @@ QWidget* MainWindow::buildChatPage() {
   chatLayout->addWidget(searchBarWidget_);
   chatLayout->addWidget(chatView_, /*stretch=*/1);
   chatLayout->addLayout(transferRow);
+  chatLayout->addWidget(replyBarWidget_);
   chatLayout->addLayout(sendRow);
   chatBackground_ = new BackgroundWidget();
   chatBackground_->setBackgroundPixmap(logoPixmap(), /*blurRadius=*/24.0, /*opacity=*/0.12);
@@ -496,6 +533,33 @@ QString MainWindow::formatLine(const ChatLine& line) const {
   QString body = line.rawHtml ? line.text : line.text.toHtmlEscaped();
   if (!line.rawHtml) body.replace(QLatin1String("\n"), QLatin1String("<br>"));
 
+  // Cita del mensaje al que se responde, si lo hay -- bloque con borde
+  // izquierdo por encima del cuerpo (mismo patron visual que WhatsApp).
+  // line.replyToSender/Text ya vienen escapados desde el receptor (ver
+  // MessagePayload::TextReply, texto que llega de otra persona), pero se
+  // escapan igualmente aqui por si acaso -- nunca hay que confiar en texto
+  // ajeno al renderizarlo como HTML.
+  if (!line.replyToText.isEmpty()) {
+    body = "<div style='border-left: 3px solid " + theme_.accent.name() +
+          "; padding-left: 6px; margin-bottom: 2px; color: " + theme_.systemMessage.name() +
+          ";'><b>" + line.replyToSender.toHtmlEscaped() + "</b><br>" +
+          line.replyToText.toHtmlEscaped() + "</div>" + body;
+  }
+
+  // Icono para responder -- solo en mensajes de texto propios/del
+  // interlocutor (no en el log de sistema, ni en un rawHtml como el
+  // enlace de descarga: no tiene sentido citar ninguno de los dos). El
+  // enlace lleva la cita YA HECHA (remitente + fragmento recortado) en vez
+  // de un id, mismo criterio "autocontenido" que el payload -- ver
+  // eventFilter.
+  QString replyIcon;
+  if (line.kind != LineKind::System && !line.rawHtml) {
+    QString anchor = "templar-reply:" + QString::fromLatin1(QUrl::toPercentEncoding(line.who)) +
+                     "|" +
+                     QString::fromLatin1(QUrl::toPercentEncoding(truncatedForQuote(line.text)));
+    replyIcon = " <a href='" + anchor + "' style='text-decoration:none;'>↩</a>";
+  }
+
   QString leftCell;
   QString rightCell;
 
@@ -507,12 +571,12 @@ QString MainWindow::formatLine(const ChatLine& line) const {
       break;
     case LineKind::Own:
       leftCell = timePrefix + "<b style='color:" + theme_.ownMessage.name() + ";'>" +
-                line.who.toHtmlEscaped() + ":</b>";
+                line.who.toHtmlEscaped() + ":</b>" + replyIcon;
       rightCell = body;
       break;
     case LineKind::Peer:
       leftCell = timePrefix + "<b style='color:" + theme_.peerMessage.name() + ";'>" +
-                line.who.toHtmlEscaped() + ":</b>";
+                line.who.toHtmlEscaped() + ":</b>" + replyIcon;
       rightCell = body;
       break;
   }
@@ -631,7 +695,8 @@ void MainWindow::ensureConversationListed(const std::string& key, const QString&
 }
 
 void MainWindow::logSystem(const QString& text) {
-  ChatLine line{LineKind::System, QString(), text, QDateTime::currentSecsSinceEpoch()};
+  ChatLine line{LineKind::System, QString(), text, QDateTime::currentSecsSinceEpoch(), false,
+               QString(), QString()};
   conversations_[kSystemKey].push_back(line);
   appendLiveLine(kSystemKey, line);
   if (localStore_.isUnlocked()) {
@@ -648,17 +713,19 @@ void MainWindow::logSystem(const QString& text) {
 
 void MainWindow::logChat(const std::string& peerKey, LineKind kind, const QString& who,
                          const QString& text, bool rawHtml, const QString& persistText,
-                         qint64 timestamp) {
+                         qint64 timestamp, const QString& replyToSender,
+                         const QString& replyToText) {
   ensureConversationListed(peerKey, QString::fromStdString(peerKey));
   qint64 effectiveTimestamp = timestamp != 0 ? timestamp : QDateTime::currentSecsSinceEpoch();
-  ChatLine line{kind, who, text, effectiveTimestamp, rawHtml};
+  ChatLine line{kind, who, text, effectiveTimestamp, rawHtml, replyToSender, replyToText};
   conversations_[peerKey].push_back(line);
   appendLiveLine(peerKey, line);
   if (localStore_.isUnlocked()) {
     try {
       const QString& toPersist = persistText.isEmpty() ? text : persistText;
       localStore_.appendHistoryLine(peerKey, static_cast<int>(kind), who.toStdString(),
-                                    toPersist.toStdString(), rawHtml, effectiveTimestamp);
+                                    toPersist.toStdString(), rawHtml, effectiveTimestamp,
+                                    replyToSender.toStdString(), replyToText.toStdString());
     } catch (const std::exception& e) {
       // Un fallo de persistencia local NUNCA debe poder cortar el flujo de
       // mensajeria en vivo (el mensaje ya se mostro arriba, ya se envio o
@@ -667,6 +734,30 @@ void MainWindow::logChat(const std::string& peerKey, LineKind kind, const QStrin
                  << ":" << e.what();
     }
   }
+}
+
+void MainWindow::startReply(const QString& sender, const QString& text) {
+  pendingReplyToSender_ = sender;
+  pendingReplyToText_ = text;
+  hasPendingReply_ = true;
+  replyBarLabel_->setText(tr("Respondiendo a %1: %2").arg(sender, text));
+  replyBarWidget_->setVisible(true);
+  messageEdit_->setFocus();
+}
+
+void MainWindow::cancelReply() {
+  hasPendingReply_ = false;
+  pendingReplyToSender_.clear();
+  pendingReplyToText_.clear();
+  replyBarWidget_->setVisible(false);
+}
+
+Bytes MainWindow::encodeOutgoingText(const std::string& text) const {
+  if (hasPendingReply_) {
+    return MessagePayload::encodeTextReply(text, pendingReplyToSender_.toStdString(),
+                                           pendingReplyToText_.toStdString());
+  }
+  return MessagePayload::encodeText(text);
 }
 
 void MainWindow::trySaveSession(const std::string& peer) {
@@ -734,9 +825,10 @@ void MainWindow::loadHistoryFromStore() {
   // primero para no romper el orden cronologico.
   std::vector<ChatLine> priorSystem;
   for (const auto& hl : localStore_.loadHistory(kSystemKey)) {
-    priorSystem.push_back(
-        ChatLine{static_cast<LineKind>(hl.kind), QString::fromStdString(hl.who),
-                QString::fromStdString(hl.text), hl.createdAt, hl.rawHtml});
+    priorSystem.push_back(ChatLine{static_cast<LineKind>(hl.kind), QString::fromStdString(hl.who),
+                                   QString::fromStdString(hl.text), hl.createdAt, hl.rawHtml,
+                                   QString::fromStdString(hl.replyToSender),
+                                   QString::fromStdString(hl.replyToText)});
   }
   auto& sys = conversations_[kSystemKey];
   sys.insert(sys.begin(), priorSystem.begin(), priorSystem.end());
@@ -760,7 +852,9 @@ void MainWindow::loadHistoryFromStore() {
     std::vector<ChatLine> lines;
     for (const auto& hl : localStore_.loadHistory(key)) {
       lines.push_back(ChatLine{static_cast<LineKind>(hl.kind), QString::fromStdString(hl.who),
-                               QString::fromStdString(hl.text), hl.createdAt, hl.rawHtml});
+                               QString::fromStdString(hl.text), hl.createdAt, hl.rawHtml,
+                               QString::fromStdString(hl.replyToSender),
+                               QString::fromStdString(hl.replyToText)});
     }
     conversations_[key] = std::move(lines);
   }
@@ -952,6 +1046,9 @@ void MainWindow::loadUnreadCountsFromStore() {
 
 void MainWindow::onConversationSelected(QListWidgetItem* current, QListWidgetItem*) {
   if (!current) return;
+  // No tiene sentido dejar una respuesta pendiente apuntando a un mensaje
+  // de un chat distinto al que se esta a punto de escribir.
+  cancelReply();
   activeConversation_ = current->data(Qt::UserRole).toString().toStdString();
   renderActiveConversation();
 
@@ -1008,14 +1105,16 @@ void MainWindow::sendGroupMessage(const std::string& groupId, const std::string&
   // Se registra la linea propia una sola vez, ya (optimista): igual que al
   // mandar a un peer con sesion ya establecida, no se espera a que cada
   // reparto individual confirme para mostrarla.
-  logChat(groupId, LineKind::Own, QString::fromStdString(myUsername_), QString::fromStdString(text));
+  logChat(groupId, LineKind::Own, QString::fromStdString(myUsername_), QString::fromStdString(text),
+         /*rawHtml=*/false, /*persistText=*/QString(), /*timestamp=*/0, pendingReplyToSender_,
+         pendingReplyToText_);
 
   std::vector<std::string> recipients;
   for (const std::string& member : it->second.members) {
     if (member != myUsername_) recipients.push_back(member);
   }
 
-  activeGroupFanout_ = GroupFanout{groupId, MessagePayload::encodeText(text), std::move(recipients)};
+  activeGroupFanout_ = GroupFanout{groupId, encodeOutgoingText(text), std::move(recipients)};
   continueGroupFanout();
 }
 
@@ -1036,7 +1135,8 @@ void MainWindow::continueGroupFanout() {
       // respuesta -- solo puede haber una peticion de bootstrap en vuelo a
       // la vez, asi que el resto de la cola se para aqui y se reanuda desde
       // el case PrekeyBundle/PrekeyBundleErr de onFrameReceived.
-      pendingOutbound_ = PendingOutbound{member, fanout.groupId, fanout.payload, QString()};
+      pendingOutbound_ =
+          PendingOutbound{member, fanout.groupId, fanout.payload, QString(), QString(), QString()};
       Writer w;
       w.str(member);
       net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
@@ -1418,8 +1518,8 @@ void MainWindow::sendBlobPointerAndFinish() {
     // Sesion perdida entre que se empezo la subida y que termino (raro,
     // pero posible si p.ej. se borro el almacen local a mitad) -- se
     // bootstrea igual que un mensaje de texto normal sin sesion.
-    pendingOutbound_ =
-        PendingOutbound{t.peer, "", pointerPayload, tr("Archivo enviado: %1").arg(t.filename)};
+    pendingOutbound_ = PendingOutbound{
+        t.peer, "", pointerPayload, tr("Archivo enviado: %1").arg(t.filename), QString(), QString()};
     Writer w;
     w.str(t.peer);
     net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
@@ -1702,32 +1802,46 @@ void MainWindow::onSendClicked() {
   std::string text = messageEdit_->text().toStdString();
   if (peer.empty() || peer == kSystemKey || text.empty()) return;
 
+  // Se capturan ANTES de mandar nada: cancelReply() (al final de esta
+  // funcion) los borra, y el bootstrap X3DH (rama de abajo) los necesita
+  // mas tarde, cuando ya se habran limpiado.
+  QString replySender = pendingReplyToSender_;
+  QString replyText = pendingReplyToText_;
+
   if (peer == myUsername_) {
     // Chat contigo mismo: una nota local, no un mensaje de verdad -- no
     // hay a quien mas llegarle, asi que no tiene sentido cifrar/mandar
     // nada por la red (ver el comentario de startSelfFileAttach).
-    logChat(peer, LineKind::Own, QString::fromStdString(myUsername_), QString::fromStdString(text));
+    logChat(peer, LineKind::Own, QString::fromStdString(myUsername_), QString::fromStdString(text),
+           /*rawHtml=*/false, /*persistText=*/QString(), /*timestamp=*/0, replySender, replyText);
     messageEdit_->clear();
+    cancelReply();
     return;
   }
 
   if (groups_.count(peer)) {
     sendGroupMessage(peer, text);
   } else if (crypto_.hasSession(peer)) {
-    Bytes ciphertext = crypto_.encryptNext(peer, MessagePayload::encodeText(text));
+    Bytes ciphertext = crypto_.encryptNext(peer, encodeOutgoingText(text));
     sendEncryptedToServer(peer, ciphertext);
-    logChat(peer, LineKind::Own, QString::fromStdString(myUsername_), QString::fromStdString(text));
+    logChat(peer, LineKind::Own, QString::fromStdString(myUsername_), QString::fromStdString(text),
+           false, QString(), 0, replySender, replyText);
     trySaveSession(peer);
   } else {
     // Necesitamos el prekey bundle de B antes de poder cifrar el primer
     // mensaje (X3DH). Se completa en onFrameReceived cuando llegue.
-    pendingOutbound_ =
-        PendingOutbound{peer, "", MessagePayload::encodeText(text), QString::fromStdString(text)};
+    pendingOutbound_ = PendingOutbound{peer,
+                                       "",
+                                       encodeOutgoingText(text),
+                                       QString::fromStdString(text),
+                                       replySender,
+                                       replyText};
     Writer w;
     w.str(peer);
     net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
   }
   messageEdit_->clear();
+  cancelReply();
 }
 
 void MainWindow::onNetConnected() {
@@ -1921,7 +2035,8 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
 
               if (!pending.ownLineText.isEmpty()) {
                 logChat(pending.peer, LineKind::Own, QString::fromStdString(myUsername_),
-                       pending.ownLineText);
+                       pending.ownLineText, /*rawHtml=*/false, /*persistText=*/QString(),
+                       /*timestamp=*/0, pending.replyToSender, pending.replyToText);
               }
             } else {
               Writer w;
@@ -2021,11 +2136,14 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
 
         DecodedPayload decoded = MessagePayload::decode(plaintext);
         switch (decoded.kind) {
-          case PayloadKind::Text: {
+          case PayloadKind::Text:
+          case PayloadKind::TextReply: {
             trySaveSession(sender);
             logChat(sender, LineKind::Peer, QString::fromStdString(sender),
                    QString::fromStdString(decoded.text), /*rawHtml=*/false,
-                   /*persistText=*/QString(), sentAt);
+                   /*persistText=*/QString(), sentAt,
+                   QString::fromStdString(decoded.replyToSender),
+                   QString::fromStdString(decoded.replyToText));
             if (sender != activeConversation_) markUnread(sender);
             if (trayIcon_ && shouldNotify()) {
               // Contenido generico a proposito: el texto real no aparece en
@@ -2200,10 +2318,11 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
         trySaveSession(sender);
 
         DecodedPayload decoded = MessagePayload::decode(plaintext);
-        if (decoded.kind == PayloadKind::Text) {
+        if (decoded.kind == PayloadKind::Text || decoded.kind == PayloadKind::TextReply) {
           logChat(groupId, LineKind::Peer, QString::fromStdString(sender),
                  QString::fromStdString(decoded.text), /*rawHtml=*/false, /*persistText=*/QString(),
-                 sentAt);
+                 sentAt, QString::fromStdString(decoded.replyToSender),
+                 QString::fromStdString(decoded.replyToText));
           if (groupId != activeConversation_) markUnread(groupId);
           if (trayIcon_ && shouldNotify()) {
             trayIcon_->showMessage(displayLabelFor(groupId),

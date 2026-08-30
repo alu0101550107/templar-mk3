@@ -14,6 +14,16 @@ Bytes MessagePayload::encodeText(const std::string& text) {
   return w.take();
 }
 
+Bytes MessagePayload::encodeTextReply(const std::string& text, const std::string& replyToSender,
+                                      const std::string& replyToText) {
+  Writer w;
+  w.u8(static_cast<uint8_t>(PayloadKind::TextReply));
+  w.str(text);
+  w.str(replyToSender);
+  w.str(replyToText);
+  return w.take();
+}
+
 Bytes MessagePayload::encodeFileBlobPointer(const std::string& blobId, const std::string& filename,
                                             uint64_t fileSize, const Bytes& fileKey,
                                             const Bytes& fileHeader) {
@@ -40,6 +50,11 @@ DecodedPayload MessagePayload::decode(const Bytes& payload) {
   switch (kind) {
     case PayloadKind::Text:
       out.text = r.str();
+      break;
+    case PayloadKind::TextReply:
+      out.text = r.str();
+      out.replyToSender = r.str();
+      out.replyToText = r.str();
       break;
     case PayloadKind::FileMeta:
       out.filename = r.str();

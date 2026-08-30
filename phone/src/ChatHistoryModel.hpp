@@ -22,6 +22,11 @@ struct ChatLine {
   // (ver ClientController::onFileBlobPointerReceived) -- nunca para nada
   // que venga de otra persona.
   bool rawHtml = false;
+  // Vacios si este mensaje no responde a otro -- si no, una COPIA
+  // (recortada) del mensaje original, no una referencia por id (ver el
+  // comentario de MessagePayload::TextReply en client/src/MessagePayload.hpp).
+  QString replyToSender;
+  QString replyToText;
 };
 
 // Modelo para el ListView de ChatPage.qml -- muestra el historial de UNA
@@ -48,6 +53,8 @@ class ChatHistoryModel : public QAbstractListModel {
     // aqui se resuelve con el mecanismo de secciones nativo de
     // ListView en vez de insertar una linea mas a mano.
     DateSectionRole,
+    ReplyToSenderRole,
+    ReplyToTextRole,
   };
 
   explicit ChatHistoryModel(QObject* parent = nullptr);

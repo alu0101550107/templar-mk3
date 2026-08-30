@@ -87,6 +87,15 @@ Page {
         peerOnline = controller.conversations.isOnline(page.peerKey)
     }
 
+    // Fragmento a mandar a controller.startReply al deslizar un mensaje --
+    // mismo criterio y mismo limite que truncatedForQuote en MainWindow.cpp
+    // del escritorio, para no arrastrar mensajes enteros (posiblemente muy
+    // largos) dentro de cada respuesta.
+    function truncatedForQuote(text) {
+        var oneLine = text.replace(/\n/g, " ")
+        return oneLine.length <= 80 ? oneLine : oneLine.substring(0, 80) + "…"
+    }
+
     Component.onCompleted: {
         refreshAdminStatus()
         refreshOnlineStatus()
@@ -369,6 +378,7 @@ Page {
             // por su cuenta -- la tabla los resuelve juntos, como una unica
             // unidad.
             delegate: Label {
+                id: msgLabel
                 width: ListView.view.width
                 wrapMode: Text.Wrap
                 textFormat: Text.RichText
@@ -387,6 +397,54 @@ Page {
                         controller.startBlobDownload(link.substring("templar-download:".length))
                     } else if (link.indexOf("templar-selffile:") === 0) {
                         controller.openSelfFile(decodeURIComponent(link.substring("templar-selffile:".length)))
+                    }
+                }
+
+                // Vuelve a x:0 sola en cuanto se suelta el dedo (ver
+                // DragHandler.onActiveChanged) -- solo mientras el gesto
+                // esta activo se mueve sin animar, para que siga el dedo
+                // sin retraso.
+                Behavior on x {
+                    enabled: !dragHandler.active
+                    NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+                }
+
+                // Icono de responder, revelado a la izquierda del mensaje
+                // segun se desliza -- hijo de msgLabel (no un hermano) para
+                // que se mueva CON el, mismo efecto visual que WhatsApp sin
+                // necesitar una capa de fondo aparte.
+                Text {
+                    text: "↩"
+                    font.pixelSize: 18
+                    color: theme.accent
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: -32
+                    opacity: Math.max(0, Math.min(1, msgLabel.x / 48))
+                }
+
+                // Deslizar hacia la derecha para responder -- mismo gesto
+                // que WhatsApp: siempre vuelve a x:0 al soltar (nunca se
+                // queda "abierto"), y si se paso del umbral en el momento
+                // de soltar, se activa startReply con este mensaje. Solo en
+                // mensajes de texto propios/del interlocutor -- ni Sistema
+                // (kind 0) ni un rawHtml (enlace de descarga) tiene sentido
+                // citarlo, mismo criterio que el icono ↩ en formatLine del
+                // escritorio.
+                DragHandler {
+                    id: dragHandler
+                    target: msgLabel
+                    enabled: model.kind !== 0 && !model.rawHtml
+                    xAxis.enabled: true
+                    yAxis.enabled: false
+                    xAxis.minimum: 0
+                    xAxis.maximum: 72
+                    onActiveChanged: {
+                        if (!dragHandler.active) {
+                            if (msgLabel.x > 48) {
+                                controller.startReply(model.who, page.truncatedForQuote(model.text))
+                            }
+                            msgLabel.x = 0
+                        }
                     }
                 }
 
@@ -438,6 +496,18 @@ Page {
                                 "; color:" + theme.background + ";'>" + m + "</span>" })
                     }
 
+                    // Cita del mensaje al que se responde, si lo hay --
+                    // DESPUES del resaltado de busqueda de arriba (para no
+                    // marcar/afectar el contenido de la cita), bloque con
+                    // borde izquierdo por encima del cuerpo, mismo patron
+                    // visual que MainWindow::formatLine en el escritorio.
+                    if (model.replyToText.length > 0) {
+                        body = "<div style='border-left: 3px solid " + theme.accent +
+                               "; padding-left: 6px; margin-bottom: 2px; color: " +
+                               theme.systemMessage + ";'><b>" + escapeHtml(model.replyToSender) +
+                               "</b><br>" + escapeHtml(model.replyToText) + "</div>" + body
+                    }
+
                     var leftCell, rightCell
                     if (model.kind === 0) {
                         leftCell = prefix
@@ -473,6 +543,31 @@ Page {
             to: 1
             value: controller.fileTransferProgress
             Layout.fillWidth: true
+        }
+
+        // Barra "Respondiendo a..." -- equivalente movil de replyBarWidget_
+        // en el escritorio. Aparece al deslizar un mensaje (ver el
+        // DragHandler del delegate de arriba) y se limpia sola al mandar o
+        // al salir del chat (ver ClientController::setActiveConversation/
+        // clearActiveConversation).
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            visible: controller.hasPendingReply
+
+            Label {
+                text: qsTr("Respondiendo a %1: %2")
+                    .arg(controller.pendingReplySender).arg(controller.pendingReplyText)
+                wrapMode: Text.WordWrap
+                color: theme.foreground
+                Layout.fillWidth: true
+            }
+            TemplarButton {
+                text: "✕"
+                implicitWidth: 32
+                flat: true
+                onClicked: controller.cancelReply()
+            }
         }
 
         RowLayout {

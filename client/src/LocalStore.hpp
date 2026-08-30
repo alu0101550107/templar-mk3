@@ -47,6 +47,10 @@ struct HistoryLine {
   // proposito desde que los enlaces de descarga sobreviven a un reinicio
   // (ver PendingBlobDownloadRecord).
   bool rawHtml = false;
+  // Vacios si este mensaje no responde a otro. Si no, es una COPIA
+  // (recortada) del mensaje original -- ver MessagePayload::TextReply.
+  std::string replyToSender;
+  std::string replyToText;
 };
 
 // Un puntero a archivo recibido y todavia sin descargar, persistido para
@@ -126,7 +130,8 @@ class LocalStore {
   // proceso (que puede ser mucho despues si el destinatario estaba
   // desconectado cuando se envio).
   void appendHistoryLine(const std::string& conversationKey, int kind, const std::string& who,
-                         const std::string& text, bool rawHtml = false, int64_t createdAt = 0);
+                         const std::string& text, bool rawHtml = false, int64_t createdAt = 0,
+                         const std::string& replyToSender = "", const std::string& replyToText = "");
   std::vector<HistoryLine> loadHistory(const std::string& conversationKey);
   std::vector<std::string> listConversationKeys();
 

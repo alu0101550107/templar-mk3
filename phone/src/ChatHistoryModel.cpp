@@ -30,6 +30,10 @@ QVariant ChatHistoryModel::data(const QModelIndex& index, int role) const {
       return line.timestamp;
     case RawHtmlRole:
       return line.rawHtml;
+    case ReplyToSenderRole:
+      return line.replyToSender;
+    case ReplyToTextRole:
+      return line.replyToText;
     case DateSectionRole: {
       if (line.timestamp <= 0) return QString();
       QDate date = QDateTime::fromSecsSinceEpoch(line.timestamp).date();
@@ -49,6 +53,8 @@ QHash<int, QByteArray> ChatHistoryModel::roleNames() const {
       {TimestampRole, "timestamp"},
       {RawHtmlRole, "rawHtml"},
       {DateSectionRole, "dateSection"},
+      {ReplyToSenderRole, "replyToSender"},
+      {ReplyToTextRole, "replyToText"},
   };
 }
 

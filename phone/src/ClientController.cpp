@@ -475,6 +475,9 @@ void ClientController::rejectGroupInvite(quint32 inviteId) {
 }
 
 void ClientController::setActiveConversation(const QString& key) {
+  // No tiene sentido dejar una respuesta pendiente apuntando a un mensaje
+  // de un chat distinto al que se esta a punto de escribir.
+  cancelReply();
   activeConversationKey_ = key;
   auto it = conversationHistory_.find(key.toStdString());
   history_.setLines(it != conversationHistory_.end() ? it->second : std::vector<ChatLine>{});
@@ -482,6 +485,7 @@ void ClientController::setActiveConversation(const QString& key) {
 }
 
 void ClientController::clearActiveConversation() {
+  cancelReply();
   activeConversationKey_.clear();
   history_.setLines({});
 }
@@ -512,9 +516,10 @@ void ClientController::clearUnread(const std::string& key) {
 
 void ClientController::logChat(const std::string& peerKey, int kind, const QString& who,
                                const QString& text, bool rawHtml, const QString& persistText,
-                               qint64 timestamp) {
+                               qint64 timestamp, const QString& replyToSender,
+                               const QString& replyToText) {
   qint64 effectiveTimestamp = timestamp != 0 ? timestamp : QDateTime::currentSecsSinceEpoch();
-  ChatLine line{kind, who, text, effectiveTimestamp, rawHtml};
+  ChatLine line{kind, who, text, effectiveTimestamp, rawHtml, replyToSender, replyToText};
   conversationHistory_[peerKey].push_back(line);
   if (activeConversationKey_.toStdString() == peerKey) history_.append(line);
 
@@ -522,7 +527,8 @@ void ClientController::logChat(const std::string& peerKey, int kind, const QStri
     try {
       const QString& toPersist = persistText.isEmpty() ? text : persistText;
       localStore_.appendHistoryLine(peerKey, kind, who.toStdString(), toPersist.toStdString(),
-                                    rawHtml, effectiveTimestamp);
+                                    rawHtml, effectiveTimestamp, replyToSender.toStdString(),
+                                    replyToText.toStdString());
     } catch (const std::exception&) {
       // Un fallo persistiendo no debe romper el envio/recepcion en vivo --
       // mismo criterio que MainWindow::logChat en el escritorio.
@@ -532,6 +538,29 @@ void ClientController::logChat(const std::string& peerKey, int kind, const QStri
 
 void ClientController::logSystem(const QString& text) {
   logChat(kSystemKey, /*System=*/0, QString(), text);
+}
+
+void ClientController::startReply(const QString& sender, const QString& text) {
+  pendingReplyToSender_ = sender;
+  pendingReplyToText_ = text;
+  hasPendingReply_ = true;
+  emit pendingReplyChanged();
+}
+
+void ClientController::cancelReply() {
+  if (!hasPendingReply_) return;
+  hasPendingReply_ = false;
+  pendingReplyToSender_.clear();
+  pendingReplyToText_.clear();
+  emit pendingReplyChanged();
+}
+
+Bytes ClientController::encodeOutgoingText(const std::string& text) const {
+  if (hasPendingReply_) {
+    return MessagePayload::encodeTextReply(text, pendingReplyToSender_.toStdString(),
+                                           pendingReplyToText_.toStdString());
+  }
+  return MessagePayload::encodeText(text);
 }
 
 void ClientController::sendEncryptedToServer(const std::string& peer, const Bytes& ciphertext) {
@@ -576,6 +605,8 @@ void ClientController::continueGroupFanout() {
       pendingOutboundPayload_ = fanout.payload;
       pendingOutboundGroupId_ = fanout.groupId;
       pendingOutboundOwnLineText_.clear();
+      pendingOutboundReplyToSender_.clear();
+      pendingOutboundReplyToText_.clear();
       Writer w;
       w.str(member);
       net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
@@ -670,9 +701,10 @@ void ClientController::loadHistoryFromStore() {
 
     std::vector<ChatLine> lines;
     for (const auto& hl : localStore_.loadHistory(key)) {
-      lines.push_back(
-          ChatLine{hl.kind, QString::fromStdString(hl.who), QString::fromStdString(hl.text),
-                   hl.createdAt, hl.rawHtml});
+      lines.push_back(ChatLine{hl.kind, QString::fromStdString(hl.who),
+                               QString::fromStdString(hl.text), hl.createdAt, hl.rawHtml,
+                               QString::fromStdString(hl.replyToSender),
+                               QString::fromStdString(hl.replyToText)});
     }
     conversationHistory_[key] = std::move(lines);
   }
@@ -683,31 +715,42 @@ void ClientController::sendMessage(const QString& peerKey, const QString& text) 
   std::string plaintext = text.toStdString();
   if (peer.empty() || plaintext.empty()) return;
 
+  // Se capturan ANTES de mandar nada: cancelReply() (al final de esta
+  // funcion) los borra, y el bootstrap X3DH (rama de abajo) los necesita
+  // mas tarde, cuando ya se habran limpiado.
+  QString replySender = pendingReplyToSender_;
+  QString replyText = pendingReplyToText_;
+
   if (peer == myUsername_) {
     // Chat contigo mismo: una nota local, no un mensaje de verdad -- no
     // hay a quien mas llegarle, asi que no tiene sentido cifrar/mandar
     // nada por la red (ver el comentario de startSelfFileAttach).
-    logChat(peer, /*Own=*/1, username(), text);
+    logChat(peer, /*Own=*/1, username(), text, /*rawHtml=*/false, /*persistText=*/QString(),
+           /*timestamp=*/0, replySender, replyText);
+    cancelReply();
     return;
   }
 
   if (crypto_.hasSession(peer)) {
-    Bytes ciphertext = crypto_.encryptNext(peer, MessagePayload::encodeText(plaintext));
+    Bytes ciphertext = crypto_.encryptNext(peer, encodeOutgoingText(plaintext));
     sendEncryptedToServer(peer, ciphertext);
-    logChat(peer, /*Own=*/1, username(), text);
+    logChat(peer, /*Own=*/1, username(), text, false, QString(), 0, replySender, replyText);
     trySaveSession(peer);
   } else {
     // Necesitamos el prekey bundle del peer antes de poder cifrar el
     // primer mensaje (X3DH) -- se completa en el caso PrekeyBundle de
     // onFrameReceived cuando llegue.
     pendingOutboundPeer_ = peer;
-    pendingOutboundPayload_ = MessagePayload::encodeText(plaintext);
+    pendingOutboundPayload_ = encodeOutgoingText(plaintext);
     pendingOutboundGroupId_.clear();
     pendingOutboundOwnLineText_ = text;
+    pendingOutboundReplyToSender_ = replySender;
+    pendingOutboundReplyToText_ = replyText;
     Writer w;
     w.str(peer);
     net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
   }
+  cancelReply();
 }
 
 void ClientController::sendGroupMessage(const QString& groupKey, const QString& text) {
@@ -721,16 +764,17 @@ void ClientController::sendGroupMessage(const QString& groupKey, const QString& 
   // Se registra la linea propia una sola vez, ya (optimista) -- igual que
   // al mandar a un peer con sesion ya establecida, no se espera a que cada
   // reparto individual confirme para mostrarla.
-  logChat(groupId, /*Own=*/1, username(), text);
+  logChat(groupId, /*Own=*/1, username(), text, /*rawHtml=*/false, /*persistText=*/QString(),
+         /*timestamp=*/0, pendingReplyToSender_, pendingReplyToText_);
 
   std::vector<std::string> recipients;
   for (const QString& member : qMembers) {
     if (member.toStdString() != myUsername_) recipients.push_back(member.toStdString());
   }
 
-  activeGroupFanout_ =
-      GroupFanout{groupId, MessagePayload::encodeText(plaintext), std::move(recipients)};
+  activeGroupFanout_ = GroupFanout{groupId, encodeOutgoingText(plaintext), std::move(recipients)};
   continueGroupFanout();
+  cancelReply();
 }
 
 void ClientController::sendFile(const QString& peerKey, const QUrl& fileUrl) {
@@ -926,6 +970,8 @@ void ClientController::sendBlobPointerAndFinish() {
     pendingOutboundPayload_ = pointerPayload;
     pendingOutboundGroupId_.clear();
     pendingOutboundOwnLineText_ = tr("Archivo enviado: %1").arg(t.filename);
+    pendingOutboundReplyToSender_.clear();
+    pendingOutboundReplyToText_.clear();
     Writer w;
     w.str(t.peer);
     net_.sendFrame(MsgType::FetchPrekeyBundle, w.take());
@@ -1495,10 +1541,14 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         Bytes pointerPayload = pendingOutboundPayload_;
         std::string groupId = pendingOutboundGroupId_;
         QString ownLineText = pendingOutboundOwnLineText_;
+        QString replyToSender = pendingOutboundReplyToSender_;
+        QString replyToText = pendingOutboundReplyToText_;
         pendingOutboundPeer_.reset();
         pendingOutboundPayload_.clear();
         pendingOutboundGroupId_.clear();
         pendingOutboundOwnLineText_.clear();
+        pendingOutboundReplyToSender_.clear();
+        pendingOutboundReplyToText_.clear();
 
         Reader r(payload);
         templar::crypto::PrekeyBundle bundle{};
@@ -1543,7 +1593,10 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
               w.blob(first.ciphertext);
               w.blob(otpk);
               net_.sendFrame(MsgType::SendMsg, w.take());
-              if (!ownLineText.isEmpty()) logChat(peer, /*Own=*/1, username(), ownLineText);
+              if (!ownLineText.isEmpty()) {
+                logChat(peer, /*Own=*/1, username(), ownLineText, /*rawHtml=*/false,
+                       /*persistText=*/QString(), /*timestamp=*/0, replyToSender, replyToText);
+              }
             } else {
               w.str(groupId);
               w.str(peer);
@@ -1571,6 +1624,8 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
         pendingOutboundPayload_.clear();
         pendingOutboundGroupId_.clear();
         pendingOutboundOwnLineText_.clear();
+        pendingOutboundReplyToSender_.clear();
+        pendingOutboundReplyToText_.clear();
         if (wasGroupFanout) continueGroupFanout();
         break;
       }
@@ -1651,13 +1706,16 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
 
           DecodedPayload decoded = MessagePayload::decode(plaintext);
           switch (decoded.kind) {
-            case PayloadKind::Text: {
+            case PayloadKind::Text:
+            case PayloadKind::TextReply: {
               trySaveSession(sender);
               QString qsender = QString::fromStdString(sender);
               bool isNew = conversations_.upsert(qsender, qsender, /*isGroup=*/false);
               if (isNew) subscribePresence(qsender);
               logChat(sender, /*Peer=*/2, qsender, QString::fromStdString(decoded.text),
-                     /*rawHtml=*/false, /*persistText=*/QString(), sentAt);
+                     /*rawHtml=*/false, /*persistText=*/QString(), sentAt,
+                     QString::fromStdString(decoded.replyToSender),
+                     QString::fromStdString(decoded.replyToText));
               if (sender != activeConversationKey_.toStdString()) markUnread(sender);
               if (shouldNotify(qsender)) showSystemNotification(qsender, tr("Nuevo mensaje"));
               break;
@@ -1721,10 +1779,11 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
           trySaveSession(sender);
 
           DecodedPayload decoded = MessagePayload::decode(plaintext);
-          if (decoded.kind == PayloadKind::Text) {
+          if (decoded.kind == PayloadKind::Text || decoded.kind == PayloadKind::TextReply) {
             logChat(groupId, /*Peer=*/2, QString::fromStdString(sender),
                    QString::fromStdString(decoded.text), /*rawHtml=*/false,
-                   /*persistText=*/QString(), sentAt);
+                   /*persistText=*/QString(), sentAt, QString::fromStdString(decoded.replyToSender),
+                   QString::fromStdString(decoded.replyToText));
             if (groupId != activeConversationKey_.toStdString()) markUnread(groupId);
             QString qGroupId = QString::fromStdString(groupId);
             if (shouldNotify(qGroupId)) {

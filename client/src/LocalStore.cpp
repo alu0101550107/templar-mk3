@@ -126,7 +126,9 @@ void LocalStore::ensureSchema() {
       "  who TEXT NOT NULL,"
       "  text TEXT NOT NULL,"
       "  created_at INTEGER NOT NULL DEFAULT 0,"
-      "  raw_html INTEGER NOT NULL DEFAULT 0"
+      "  raw_html INTEGER NOT NULL DEFAULT 0,"
+      "  reply_to_sender TEXT NOT NULL DEFAULT '',"
+      "  reply_to_text TEXT NOT NULL DEFAULT ''"
       ");"
       "CREATE INDEX IF NOT EXISTS idx_history_conv ON history(conversation_key, id);"
       "CREATE TABLE IF NOT EXISTS unread_counts ("
@@ -169,6 +171,7 @@ void LocalStore::migrateSchema() {
   bool hasKindColumn = false;
   bool hasCreatedAtColumn = false;
   bool hasRawHtmlColumn = false;
+  bool hasReplyColumns = false;
   {
     Stmt s(db_, "PRAGMA table_info(history);");
     while (sqlite3_step(s) == SQLITE_ROW) {
@@ -177,6 +180,7 @@ void LocalStore::migrateSchema() {
       if (colName == "kind") hasKindColumn = true;
       if (colName == "created_at") hasCreatedAtColumn = true;
       if (colName == "raw_html") hasRawHtmlColumn = true;
+      if (colName == "reply_to_sender") hasReplyColumns = true;
     }
   }
 
@@ -215,6 +219,19 @@ void LocalStore::migrateSchema() {
         std::string err = errMsg ? errMsg : "desconocido";
         sqlite3_free(errMsg);
         throw std::runtime_error("LocalStore: fallo anadiendo la columna raw_html: " + err);
+      }
+    }
+    if (historyExists && !hasReplyColumns) {
+      // Mensajes existentes se quedan sin cita (cadena vacia = "no es una
+      // respuesta") -- no habia forma de saberlo antes de esta migracion.
+      char* errMsg = nullptr;
+      if (sqlite3_exec(db_,
+                       "ALTER TABLE history ADD COLUMN reply_to_sender TEXT NOT NULL DEFAULT '';"
+                       "ALTER TABLE history ADD COLUMN reply_to_text TEXT NOT NULL DEFAULT '';",
+                       nullptr, nullptr, &errMsg) != SQLITE_OK) {
+        std::string err = errMsg ? errMsg : "desconocido";
+        sqlite3_free(errMsg);
+        throw std::runtime_error("LocalStore: fallo anadiendo columnas de respuesta: " + err);
       }
     }
   }
@@ -430,16 +447,20 @@ std::vector<std::string> LocalStore::listSessionPeers() {
 
 void LocalStore::appendHistoryLine(const std::string& conversationKey, int kind,
                                    const std::string& who, const std::string& text,
-                                   bool rawHtml, int64_t createdAt) {
+                                   bool rawHtml, int64_t createdAt,
+                                   const std::string& replyToSender,
+                                   const std::string& replyToText) {
   Stmt s(db_,
-        "INSERT INTO history (conversation_key, kind, who, text, created_at, raw_html) "
-        "VALUES (?, ?, ?, ?, ?, ?);");
+        "INSERT INTO history (conversation_key, kind, who, text, created_at, raw_html, "
+        "reply_to_sender, reply_to_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
   bindText(s, 1, conversationKey);
   sqlite3_bind_int(s, 2, kind);
   bindText(s, 3, who);
   bindText(s, 4, text);
   sqlite3_bind_int64(s, 5, createdAt != 0 ? createdAt : static_cast<int64_t>(std::time(nullptr)));
   sqlite3_bind_int(s, 6, rawHtml ? 1 : 0);
+  bindText(s, 7, replyToSender);
+  bindText(s, 8, replyToText);
 
   if (sqlite3_step(s) != SQLITE_DONE) {
     throw std::runtime_error(std::string("LocalStore: appendHistoryLine fallo: ") +
@@ -450,8 +471,8 @@ void LocalStore::appendHistoryLine(const std::string& conversationKey, int kind,
 
 std::vector<HistoryLine> LocalStore::loadHistory(const std::string& conversationKey) {
   Stmt s(db_,
-        "SELECT kind, who, text, created_at, raw_html FROM history "
-        "WHERE conversation_key = ? ORDER BY id ASC;");
+        "SELECT kind, who, text, created_at, raw_html, reply_to_sender, reply_to_text "
+        "FROM history WHERE conversation_key = ? ORDER BY id ASC;");
   bindText(s, 1, conversationKey);
 
   std::vector<HistoryLine> out;
@@ -462,6 +483,8 @@ std::vector<HistoryLine> LocalStore::loadHistory(const std::string& conversation
     line.text = columnText(s, 2);
     line.createdAt = sqlite3_column_int64(s, 3);
     line.rawHtml = sqlite3_column_int(s, 4) != 0;
+    line.replyToSender = columnText(s, 5);
+    line.replyToText = columnText(s, 6);
     out.push_back(std::move(line));
   }
   return out;

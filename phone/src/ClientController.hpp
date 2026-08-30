@@ -76,6 +76,13 @@ class ClientController : public QObject {
   // transferencia activa".
   Q_PROPERTY(QString fileTransferStatus READ fileTransferStatus NOTIFY fileTransferStatusChanged)
   Q_PROPERTY(double fileTransferProgress READ fileTransferProgress NOTIFY fileTransferProgressChanged)
+  // Respuesta pendiente -- equivalente movil de hasPendingReply_/
+  // pendingReplyToSender_/pendingReplyToText_ en MainWindow del escritorio.
+  // ChatPage.qml los usa para mostrar la barra "Respondiendo a..." encima
+  // del campo de mensaje.
+  Q_PROPERTY(bool hasPendingReply READ hasPendingReply NOTIFY pendingReplyChanged)
+  Q_PROPERTY(QString pendingReplySender READ pendingReplySender NOTIFY pendingReplyChanged)
+  Q_PROPERTY(QString pendingReplyText READ pendingReplyText NOTIFY pendingReplyChanged)
 
  public:
   explicit ClientController(QObject* parent = nullptr);
@@ -95,6 +102,9 @@ class ClientController : public QObject {
   QVariantList pendingInvites() const { return pendingInvites_; }
   QString fileTransferStatus() const { return fileTransferStatus_; }
   double fileTransferProgress() const { return fileTransferProgress_; }
+  bool hasPendingReply() const { return hasPendingReply_; }
+  QString pendingReplySender() const { return pendingReplyToSender_; }
+  QString pendingReplyText() const { return pendingReplyToText_; }
 
   // hostAndPort acepta "host:puerto" (el campo unico que usa LoginPage.qml,
   // a diferencia de los dos campos separados del escritorio) -- si no trae
@@ -179,6 +189,15 @@ class ClientController : public QObject {
   // sirve para grupos -- ver sendGroupMessage.
   Q_INVOKABLE void sendMessage(const QString& peerKey, const QString& text);
 
+  // Deslizar un mensaje (ver ChatPage.qml) llama a esto -- el siguiente
+  // sendMessage/sendGroupMessage se manda como respuesta a `text` (una
+  // COPIA recortada del mensaje original, no una referencia -- ver el
+  // comentario de MessagePayload::TextReply) y se limpia solo al enviar o
+  // al cambiar de conversacion (ver setActiveConversation/
+  // clearActiveConversation).
+  Q_INVOKABLE void startReply(const QString& sender, const QString& text);
+  Q_INVOKABLE void cancelReply();
+
   // Manda un mensaje de texto a un grupo -- equivalente movil de
   // MainWindow::sendGroupMessage en el escritorio. El cifrado sigue siendo
   // puramente 1-a-1 (ver el comentario de SendGroupMsg en Protocol.hpp): se
@@ -244,6 +263,7 @@ class ClientController : public QObject {
   void pendingInvitesChanged();
   void fileTransferStatusChanged();
   void fileTransferProgressChanged();
+  void pendingReplyChanged();
 
  private slots:
   void onNetConnected();
@@ -296,13 +316,21 @@ class ClientController : public QObject {
   // al procesar un DeliverMsg/DeliverGroupMsg, con la hora real de envio
   // que manda el servidor (campo sentAt), para que un mensaje recibido de
   // alguien desconectado muestre cuando se mando, no cuando se entrego.
+  // replyToSender/replyToText: vacios si no responde a nada -- ver
+  // ChatHistoryModel::ChatLine::replyToSender.
   void logChat(const std::string& peerKey, int kind, const QString& who, const QString& text,
-              bool rawHtml = false, const QString& persistText = QString(), qint64 timestamp = 0);
+              bool rawHtml = false, const QString& persistText = QString(), qint64 timestamp = 0,
+              const QString& replyToSender = QString(), const QString& replyToText = QString());
   // Anade una linea a la conversacion "Sistema" -- equivalente movil de
   // MainWindow::logSystem. Solo se llama para eventos importantes
   // (conectar/desconectar/login/registro/errores), no para cada
   // setStatusText/setErrorText que ya existe en el codigo.
   void logSystem(const QString& text);
+
+  // Codifica el texto tecleado como Text o TextReply segun haya o no una
+  // respuesta pendiente -- equivalente movil de
+  // MainWindow::encodeOutgoingText.
+  templar::proto::Bytes encodeOutgoingText(const std::string& text) const;
 
   // Adjuntar un archivo en el chat CONTIGO MISMO (peer == myUsername_) no
   // pasa por el servidor -- se copia a una carpeta propia de la app (para
@@ -502,6 +530,18 @@ class ClientController : public QObject {
   // (solo se usa si pendingOutboundGroupId_ esta vacio -- en un fan-out de
   // grupo la linea propia ya se registro una vez al arrancar el fan-out).
   QString pendingOutboundOwnLineText_;
+  // Igual que pendingOutboundOwnLineText_: solo se usan si
+  // pendingOutboundGroupId_ esta vacio, para que la linea propia que se
+  // registra al completar el bootstrap tambien lleve la cita si el
+  // mensaje original era una respuesta.
+  QString pendingOutboundReplyToSender_;
+  QString pendingOutboundReplyToText_;
+
+  // --- Responder a un mensaje --- equivalente movil de hasPendingReply_/
+  // pendingReplyToSender_/pendingReplyToText_ en MainWindow.hpp.
+  bool hasPendingReply_ = false;
+  QString pendingReplyToSender_;
+  QString pendingReplyToText_;
 
   // Fan-out en curso de un mensaje de grupo (uno o ninguno a la vez, igual
   // que en el escritorio) -- equivalente movil de GroupFanout/

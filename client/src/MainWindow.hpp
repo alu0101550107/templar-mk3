@@ -57,6 +57,11 @@ struct ChatLine {
   // FileBlobPointer, ver onFileBlobPointerReceived) -- no para nada que
   // venga de fuera.
   bool rawHtml = false;
+  // Vacios si este mensaje no responde a otro -- si no, una COPIA
+  // (recortada) del mensaje original, no una referencia por id (ver el
+  // comentario de MessagePayload::TextReply para el porque).
+  QString replyToSender;
+  QString replyToText;
 };
 
 // Estado de un grupo, en memoria: se refresca por completo desde el
@@ -167,8 +172,11 @@ class MainWindow : public QWidget {
   // al procesar un DeliverMsg/DeliverGroupMsg, con la hora real de envio
   // que manda el servidor (campo sentAt), para que un mensaje recibido de
   // alguien desconectado muestre cuando se mando, no cuando se entrego.
+  // replyToSender/replyToText: vacios si no responde a nada -- ver
+  // ChatLine::replyToSender.
   void logChat(const std::string& peerKey, LineKind kind, const QString& who, const QString& text,
-              bool rawHtml = false, const QString& persistText = QString(), qint64 timestamp = 0);
+              bool rawHtml = false, const QString& persistText = QString(), qint64 timestamp = 0,
+              const QString& replyToSender = QString(), const QString& replyToText = QString());
   void ensureConversationListed(const std::string& key, const QString& label);
   void renderActiveConversation();
   void selectConversation(const std::string& key);
@@ -261,6 +269,20 @@ class MainWindow : public QWidget {
   void updateInvitePanelVisibility();
 
   QString formatLine(const ChatLine& line) const;
+
+  // --- Responder a un mensaje ---
+  // Se activa al pulsar el icono ↩ de una linea (ver formatLine/eventFilter,
+  // enlace "templar-reply:") -- muestra replyBarWidget_ con una vista previa
+  // y deja el siguiente envio como respuesta a ese mensaje. Cambiar de
+  // conversacion cancela cualquier respuesta pendiente (ver
+  // onConversationSelected): no tiene sentido citar un mensaje de un chat
+  // distinto al que se esta escribiendo.
+  void startReply(const QString& sender, const QString& text);
+  void cancelReply();
+  // Codifica el texto tecleado como Text o TextReply segun haya o no una
+  // respuesta pendiente -- centraliza esa decision para no repetirla en
+  // cada sitio que manda un mensaje (1-a-1 directo, bootstrap X3DH, grupo).
+  templar::proto::Bytes encodeOutgoingText(const std::string& text) const;
   // Separador de fecha ("6 de agosto de 2026") que se inserta entre dos
   // mensajes consecutivos cuyo dia local difiere -- se calcula al
   // renderizar a partir de ChatLine::timestamp, no se guarda como una
@@ -418,8 +440,18 @@ class MainWindow : public QWidget {
     // (solo se usa si groupId esta vacio -- en un fan-out de grupo la
     // linea propia ya se registro una vez al arrancar el fan-out).
     QString ownLineText;
+    // Igual que ownLineText: solo se usan si groupId esta vacio, para que
+    // la linea propia que se registra al completar el bootstrap tambien
+    // lleve la cita si el mensaje original era una respuesta.
+    QString replyToSender;
+    QString replyToText;
   };
   std::optional<PendingOutbound> pendingOutbound_;
+
+  // --- Responder a un mensaje ---
+  bool hasPendingReply_ = false;
+  QString pendingReplyToSender_;
+  QString pendingReplyToText_;
 
   std::string activeConversation_ = kSystemKey;
   std::unordered_map<std::string, std::vector<ChatLine>> conversations_;
@@ -497,6 +529,14 @@ class MainWindow : public QWidget {
   QPushButton* addMemberButton_;
   QPushButton* kickButton_;
   QPushButton* leaveGroupButton_;
+
+  // Barra "Respondiendo a...": oculta por defecto, mismo criterio que
+  // searchBarWidget_ -- aparece encima de la fila de envio al pulsar ↩ en
+  // un mensaje (ver startReply).
+  QWidget* replyBarWidget_;
+  QLabel* replyBarLabel_;
+  QPushButton* replyBarCloseButton_;
+
   QLineEdit* messageEdit_;
   QPushButton* sendButton_;
   QPushButton* emojiButton_;
