@@ -20,6 +20,7 @@ class UpdateChecker : public QObject {
   Q_PROPERTY(bool updateAvailable READ updateAvailable NOTIFY updateAvailableChanged)
   Q_PROPERTY(QString latestVersion READ latestVersion NOTIFY updateAvailableChanged)
   Q_PROPERTY(QString releaseUrl READ releaseUrl CONSTANT)
+  Q_PROPERTY(QString currentVersion READ currentVersion CONSTANT)
 
  public:
   explicit UpdateChecker(QObject* parent = nullptr);
