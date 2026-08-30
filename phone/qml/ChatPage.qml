@@ -505,7 +505,7 @@ Page {
                         body = "<div style='border-left: 3px solid " + theme.accent +
                                "; padding-left: 6px; margin-bottom: 2px; color: " +
                                theme.systemMessage + ";'><b>" + escapeHtml(model.replyToSender) +
-                               "</b><br>" + escapeHtml(model.replyToText) + "</div>" + body
+                               ":</b> " + escapeHtml(model.replyToText) + "</div>" + body
                     }
 
                     var leftCell, rightCell

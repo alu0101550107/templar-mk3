@@ -542,7 +542,7 @@ QString MainWindow::formatLine(const ChatLine& line) const {
   if (!line.replyToText.isEmpty()) {
     body = "<div style='border-left: 3px solid " + theme_.accent.name() +
           "; padding-left: 6px; margin-bottom: 2px; color: " + theme_.systemMessage.name() +
-          ";'><b>" + line.replyToSender.toHtmlEscaped() + "</b><br>" +
+          ";'><b>" + line.replyToSender.toHtmlEscaped() + ":</b> " +
           line.replyToText.toHtmlEscaped() + "</div>" + body;
   }
 
