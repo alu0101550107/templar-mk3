@@ -7,7 +7,7 @@ endif()
 # ultimo release publicado en GitHub. Subir esto en un commit propio junto
 # con un tag "vX.Y.Z" y un Release de GitHub es lo que activa el aviso de
 # "hay una version nueva" en quien todavia tenga la version anterior.
-project(templar_mk3 VERSION 1.0.0 LANGUAGES CXX C)
+project(templar_mk3 VERSION 1.0.2 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
