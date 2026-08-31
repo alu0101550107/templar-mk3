@@ -132,6 +132,15 @@ Page {
         logoOpacity: 0.12  // mismo valor que chatBackground_ en escritorio
     }
 
+    // Fuente de iconos propia, empaquetada en el binario (ver
+    // client/resources/icons/NOTICE.md) -- garantiza que simbolos como el
+    // de enviar se vean igual en cualquier movil, sin depender de que el
+    // sistema tenga esos codepoints en su fuente por defecto.
+    FontLoader {
+        id: iconFont
+        source: "assets/templar-icons.ttf"
+    }
+
     EmojiPicker {
         id: emojiPicker
         // Se abre justo encima de la fila de envio, centrado -- se
@@ -600,7 +609,11 @@ Page {
                 onClicked: controller.capturePhoto(page.peerKey)
             }
             TemplarButton {
-                text: qsTr("Enviar")
+                text: "➤"
+                font.family: iconFont.name
+                implicitWidth: 36
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Enviar")
                 onClicked: page.sendCurrentMessage()
             }
         }

@@ -125,6 +125,11 @@ qt6_add_qml_module(templar_phone
     # que MultiEffect renderice bien en cada dispositivo.
     qml/assets/great_helmet_logo.png
     qml/assets/great_helmet_logo_blurred.png
+    # Subset de Noto Sans Symbols2 (OFL-1.1) con solo los glifos de icono
+    # que usa la app -- ver client/resources/icons/NOTICE.md. Empaquetado
+    # para que los iconos se vean igual en cualquier movil, sin depender
+    # de que el sistema tenga esos codepoints en su fuente por defecto.
+    qml/assets/templar-icons.ttf
 )
 
 target_link_libraries(templar_phone PRIVATE

@@ -467,8 +467,13 @@ QWidget* MainWindow::buildChatPage() {
   attachButton_ = new QPushButton("📎");
   attachButton_->setObjectName("attachButton");
   attachButton_->setToolTip(tr("Enviar archivo"));
-  sendButton_ = new QPushButton(tr("Enviar"));
+  // U+27A4 (flecha solida) en vez del texto "Enviar" -- de la fuente
+  // empaquetada en el binario (ver client/resources/icons/NOTICE.md), asi
+  // que se ve igual independientemente de que fuentes tenga el sistema.
+  sendButton_ = new QPushButton(QString::fromUtf8("\xE2\x9E\xA4"));
   sendButton_->setObjectName("sendButton");
+  sendButton_->setFont(QFont("Templar Icons"));
+  sendButton_->setToolTip(tr("Enviar"));
 
   auto* sendRow = new QHBoxLayout();
   sendRow->addWidget(messageEdit_, /*stretch=*/1);
