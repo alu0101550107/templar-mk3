@@ -78,9 +78,15 @@ Page {
                 font.family: iconFont.name
                 font.pixelSize: 18
                 implicitWidth: 36
+                // La fuente de icono tiene metricas de linea distintas a
+                // la de "settingsButton" (que usa la fuente por defecto),
+                // por eso hace falta igualar el alto a mano -- mismo
+                // criterio que sendButton en ChatPage.qml.
+                implicitHeight: settingsButton.implicitHeight
                 onClicked: controller.disconnectFromServer()
             }
             TemplarButton {
+                id: settingsButton
                 text: "⚙"  // engranaje -- icono, sin texto "Ajustes"
                 font.pixelSize: 16
                 implicitWidth: 36
