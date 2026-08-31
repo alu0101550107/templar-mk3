@@ -474,6 +474,13 @@ QWidget* MainWindow::buildChatPage() {
   sendButton_->setObjectName("sendButton");
   sendButton_->setFont(QFont("Templar Icons"));
   sendButton_->setToolTip(tr("Enviar"));
+  // Mismo alto que emojiButton_/attachButton_ (la fuente de icono tiene
+  // metricas de linea distintas a la del resto, por eso hace falta fijarlo
+  // a mano en vez de dejarlo en automatico) pero mas ancho -- es el boton
+  // que se pulsa mas a menudo al escribir, conviene que el area clicable
+  // sea comoda.
+  sendButton_->setFixedHeight(emojiButton_->sizeHint().height());
+  sendButton_->setMinimumWidth(64);
 
   auto* sendRow = new QHBoxLayout();
   sendRow->addWidget(messageEdit_, /*stretch=*/1);

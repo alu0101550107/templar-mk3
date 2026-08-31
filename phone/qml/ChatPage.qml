@@ -594,6 +594,7 @@ Page {
                 onAccepted: page.sendCurrentMessage()
             }
             TemplarButton {
+                id: emojiButton
                 text: "😀"
                 implicitWidth: 36
                 onClicked: emojiPicker.open()
@@ -611,7 +612,14 @@ Page {
             TemplarButton {
                 text: "➤"
                 font.family: iconFont.name
-                implicitWidth: 36
+                // Mismo alto que emojiButton/attachButton/photoButton (la
+                // fuente de icono tiene metricas de linea distintas a la de
+                // los demas, por eso hace falta fijarlo a mano en vez de
+                // dejarlo en automatico) pero mas ancho -- es el boton que
+                // se pulsa mas a menudo al escribir, conviene que el area
+                // tocable sea comoda.
+                implicitWidth: 64
+                implicitHeight: emojiButton.implicitHeight
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Enviar")
                 onClicked: page.sendCurrentMessage()
