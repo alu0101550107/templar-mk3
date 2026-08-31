@@ -620,8 +620,6 @@ Page {
                 // tocable sea comoda.
                 implicitWidth: 64
                 implicitHeight: emojiButton.implicitHeight
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Enviar")
                 onClicked: page.sendCurrentMessage()
             }
         }
