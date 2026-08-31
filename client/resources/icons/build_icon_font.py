@@ -23,7 +23,8 @@ OUTPUT_FONT = "templar-icons.ttf"
 FAMILY_NAME = "Templar Icons"
 
 # U+27A4 BLACK RIGHTWARDS ARROWHEAD -- icono de "enviar".
-ICON_CODEPOINTS = [0x27A4]
+# U+23FB POWER SYMBOL -- icono de "cerrar sesion".
+ICON_CODEPOINTS = [0x27A4, 0x23FB]
 
 
 def main():

@@ -18,6 +18,16 @@ Page {
     SettingsDialog {
         id: settingsDialog
     }
+
+    // Fuente de iconos propia, empaquetada en el binario (ver
+    // client/resources/icons/NOTICE.md) -- garantiza que simbolos como el
+    // de apagado se vean igual en cualquier movil, sin depender de que el
+    // sistema tenga esos codepoints en su fuente por defecto (ver el
+    // comentario que habia antes en el boton de logout de aqui abajo).
+    FontLoader {
+        id: iconFont
+        source: "assets/templar-icons.ttf"
+    }
     NewChatDialog {
         id: newChatDialog
     }
@@ -59,13 +69,13 @@ Page {
 
             TemplarButton {
                 // "⏻" (simbolo de apagado, bloque "Miscellaneous
-                // Technical") no esta en la fuente de sistema de MIUI y se
-                // veia como una caja rota. Un emoji de verdad si renderiza,
-                // pero desentona con el resto (monocromo, color de acento)
-                // al ser a todo color -- "×" es un simbolo normal de texto,
-                // del mismo bloque ampliamente soportado que "×" en
-                // Latin-1, y mantiene el mismo estilo que ←/⚙/+/-.
-                text: "×"
+                // Technical") no estaba en la fuente de sistema de MIUI y
+                // se veia como una caja rota -- ahora viene de
+                // templar-icons.ttf, empaquetada en el binario, asi que no
+                // depende de lo que traiga cada movil (ver
+                // client/resources/icons/NOTICE.md).
+                text: "⏻"
+                font.family: iconFont.name
                 font.pixelSize: 18
                 implicitWidth: 36
                 onClicked: controller.disconnectFromServer()
