@@ -59,6 +59,28 @@ public class ConnectionService extends Service {
         return null;
     }
 
+    // Sin esto: al deslizar la app fuera de recientes, Android llama a
+    // Activity.onDestroy(), que en Qt dispara un apagado COMPLETO del
+    // runtime nativo (QtActivityBase.onDestroy -> terminateQtNativeApplication,
+    // sincrono, en el hilo principal). Ese apagado se ha visto colgado 20+
+    // segundos en un dispositivo real (rastreado con logcat + el volcado de
+    // dropbox del ANR: qtMainLoopThread y el hilo de render de Quick estaban
+    // ociosos, esperando normalmente -- el propio apagado de Qt es el que
+    // tarda), lo que dispara un ANR de "executing service" pasado el
+    // timeout de 20s de Android, incluso con el usuario ya en otra app.
+    // Deslizar la tarea es una señal inequivoca de "quiero cerrar esto
+    // YA" -- no hace falta un apagado ordenado: LocalStore hace commit de
+    // cada mensaje al vuelo (sin transacciones en bloque, ver
+    // LocalStore::appendHistoryLine), asi que no hay nada que perder por
+    // matar el proceso en el acto en vez de esperar a que Qt termine de
+    // desmontar el motor QML/engine nativo.
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        stopSelf();
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
+
     public static void start(Context context) {
         ContextCompat.startForegroundService(context, new Intent(context, ConnectionService.class));
     }
