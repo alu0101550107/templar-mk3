@@ -40,6 +40,33 @@ for arg in "$@"; do
   esac
 done
 
+# --- Aviso si el CMakeLists.txt no se ha subido de version desde el
+#     ultimo tag de git -- ya paso de verdad: se genero el APK de un
+#     release nuevo sin bumpear antes la version, y la app se quedo
+#     reportando la version vieja (UpdateChecker::currentVersion viene de
+#     PROJECT_VERSION, compilado en el binario -- no tiene nada que ver
+#     con el tag de git). Solo un aviso, no bloquea el build -- por si de
+#     verdad quieres generar un APK de prueba sin tocar la version.
+#     SKIP_VERSION_CHECK=1 lo salta sin preguntar (uso en CI/scripts).
+if [ -z "${SKIP_VERSION_CHECK:-}" ] && git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+  CMAKE_VERSION="$(grep -oP 'project\(templar_mk3 VERSION \K[0-9]+\.[0-9]+\.[0-9]+' "$SCRIPT_DIR/CMakeLists.txt" || true)"
+  LATEST_TAG="$(git -C "$SCRIPT_DIR" tag --list 'v*' --sort=-v:refname | head -n1)"
+  if [ -n "$CMAKE_VERSION" ] && [ -n "$LATEST_TAG" ]; then
+    LATEST_TAG_VERSION="${LATEST_TAG#v}"
+    HIGHEST="$(printf '%s\n%s\n' "$CMAKE_VERSION" "$LATEST_TAG_VERSION" | sort -V | tail -n1)"
+    if [ "$CMAKE_VERSION" = "$LATEST_TAG_VERSION" ]; then
+      echo "!!! CMakeLists.txt sigue en la version $CMAKE_VERSION, igual que el ultimo tag ($LATEST_TAG)." >&2
+      echo "!!! ¿Se te olvido bumpear la version antes de este build?" >&2
+      read -r -p "    Continuar de todos modos? [y/N] " _reply
+      [ "$_reply" = "y" ] || [ "$_reply" = "Y" ] || exit 1
+    elif [ "$HIGHEST" = "$LATEST_TAG_VERSION" ]; then
+      echo "!!! CMakeLists.txt esta en $CMAKE_VERSION, POR DEBAJO del ultimo tag ($LATEST_TAG)." >&2
+      read -r -p "    Continuar de todos modos? [y/N] " _reply
+      [ "$_reply" = "y" ] || [ "$_reply" = "Y" ] || exit 1
+    fi
+  fi
+fi
+
 # --- Localizar Qt para Android + el kit de escritorio (QT_HOST_PATH) ---
 if [ -z "${QT_ANDROID_DIR:-}" ]; then
   echo "==> Buscando una instalacion de Qt para Android en ~/Qt..."
