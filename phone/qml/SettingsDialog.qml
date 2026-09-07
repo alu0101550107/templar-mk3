@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 // Equivalente movil de SettingsDialog.cpp en el cliente de escritorio:
 // mismos seis colores editables (fondo, texto general, acento, y los tres
@@ -14,6 +15,12 @@ Dialog {
     modal: true
     anchors.centerIn: parent
     width: Math.min(parent ? parent.width - 40 : 360, 360)
+    // Con la seccion de notificaciones anadida, el contenido ya no cabe
+    // entero en pantallas normales -- sin topar la altura aqui, Popup deja
+    // que el ColumnLayout de mas abajo crezca todo lo que haga falta y se
+    // solapa con el pie (Cancelar/Guardar). Topado a un % de la pantalla,
+    // con el ScrollView de mas abajo absorbiendo el resto.
+    height: Math.min(implicitHeight, Screen.height * 0.85)
 
     property color draftBackground: theme.background
     property color draftForeground: theme.foreground
@@ -188,232 +195,239 @@ Dialog {
         colorPicker.open()
     }
 
-    ColumnLayout {
+    ScrollView {
         width: dialog.availableWidth
-        spacing: 10
+        height: dialog.availableHeight
+        clip: true
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Fondo:"); color: theme.foreground; Layout.fillWidth: true }
-            Rectangle {
-                width: 48; height: 24
-                color: dialog.draftBackground
-                border.color: theme.accent
-                border.width: 1
-                radius: 2
-                MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("background", dialog.draftBackground) }
+        ColumnLayout {
+            width: dialog.availableWidth
+            spacing: 10
+
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Fondo:"); color: theme.foreground; Layout.fillWidth: true }
+                Rectangle {
+                    width: 48; height: 24
+                    color: dialog.draftBackground
+                    border.color: theme.accent
+                    border.width: 1
+                    radius: 2
+                    MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("background", dialog.draftBackground) }
+                }
             }
-        }
 
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Texto general:"); color: theme.foreground; Layout.fillWidth: true }
-            Rectangle {
-                width: 48; height: 24
-                color: dialog.draftForeground
-                border.color: theme.accent
-                border.width: 1
-                radius: 2
-                MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("foreground", dialog.draftForeground) }
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Texto general:"); color: theme.foreground; Layout.fillWidth: true }
+                Rectangle {
+                    width: 48; height: 24
+                    color: dialog.draftForeground
+                    border.color: theme.accent
+                    border.width: 1
+                    radius: 2
+                    MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("foreground", dialog.draftForeground) }
+                }
             }
-        }
 
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Bordes / botones:"); color: theme.foreground; Layout.fillWidth: true }
-            Rectangle {
-                width: 48; height: 24
-                color: dialog.draftAccent
-                border.color: theme.accent
-                border.width: 1
-                radius: 2
-                MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("accent", dialog.draftAccent) }
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Bordes / botones:"); color: theme.foreground; Layout.fillWidth: true }
+                Rectangle {
+                    width: 48; height: 24
+                    color: dialog.draftAccent
+                    border.color: theme.accent
+                    border.width: 1
+                    radius: 2
+                    MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("accent", dialog.draftAccent) }
+                }
             }
-        }
 
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Tu nombre en el chat:"); color: theme.foreground; Layout.fillWidth: true }
-            Rectangle {
-                width: 48; height: 24
-                color: dialog.draftOwnMessage
-                border.color: theme.accent
-                border.width: 1
-                radius: 2
-                MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("ownMessage", dialog.draftOwnMessage) }
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Tu nombre en el chat:"); color: theme.foreground; Layout.fillWidth: true }
+                Rectangle {
+                    width: 48; height: 24
+                    color: dialog.draftOwnMessage
+                    border.color: theme.accent
+                    border.width: 1
+                    radius: 2
+                    MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("ownMessage", dialog.draftOwnMessage) }
+                }
             }
-        }
 
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Nombre del interlocutor:"); color: theme.foreground; Layout.fillWidth: true }
-            Rectangle {
-                width: 48; height: 24
-                color: dialog.draftPeerMessage
-                border.color: theme.accent
-                border.width: 1
-                radius: 2
-                MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("peerMessage", dialog.draftPeerMessage) }
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Nombre del interlocutor:"); color: theme.foreground; Layout.fillWidth: true }
+                Rectangle {
+                    width: 48; height: 24
+                    color: dialog.draftPeerMessage
+                    border.color: theme.accent
+                    border.width: 1
+                    radius: 2
+                    MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("peerMessage", dialog.draftPeerMessage) }
+                }
             }
-        }
 
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Mensajes de sistema:"); color: theme.foreground; Layout.fillWidth: true }
-            Rectangle {
-                width: 48; height: 24
-                color: dialog.draftSystemMessage
-                border.color: theme.accent
-                border.width: 1
-                radius: 2
-                MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("systemMessage", dialog.draftSystemMessage) }
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Mensajes de sistema:"); color: theme.foreground; Layout.fillWidth: true }
+                Rectangle {
+                    width: 48; height: 24
+                    color: dialog.draftSystemMessage
+                    border.color: theme.accent
+                    border.width: 1
+                    radius: 2
+                    MouseArea { anchors.fill: parent; onClicked: dialog.pickColor("systemMessage", dialog.draftSystemMessage) }
+                }
             }
-        }
 
-        TemplarButton {
-            text: qsTr("Restaurar valores por defecto")
-            Layout.fillWidth: true
-            Layout.topMargin: 8
-            onClicked: {
-                dialog.draftBackground = theme.defaultBackground
-                dialog.draftForeground = theme.defaultForeground
-                dialog.draftAccent = theme.defaultAccent
-                dialog.draftOwnMessage = theme.defaultOwnMessage
-                dialog.draftPeerMessage = theme.defaultPeerMessage
-                dialog.draftSystemMessage = theme.defaultSystemMessage
+            TemplarButton {
+                text: qsTr("Restaurar valores por defecto")
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+                onClicked: {
+                    dialog.draftBackground = theme.defaultBackground
+                    dialog.draftForeground = theme.defaultForeground
+                    dialog.draftAccent = theme.defaultAccent
+                    dialog.draftOwnMessage = theme.defaultOwnMessage
+                    dialog.draftPeerMessage = theme.defaultPeerMessage
+                    dialog.draftSystemMessage = theme.defaultSystemMessage
+                }
             }
-        }
-
-        Label {
-            text: qsTr("Idioma")
-            color: theme.accent
-            font.bold: true
-            Layout.topMargin: 8
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Idioma de la interfaz:"); color: theme.foreground; Layout.fillWidth: true }
-            ComboBox {
-                id: languageCombo
-                textRole: "name"
-                valueRole: "code"
-                model: [
-                    { code: "es", name: language.displayNameForCode("es") },
-                    { code: "en", name: language.displayNameForCode("en") }
-                ]
-                Component.onCompleted: currentIndex = indexOfValue(language.currentCode)
-            }
-        }
-
-        Label {
-            text: qsTr("El cambio de idioma se aplica al reiniciar la app.")
-            color: "#888888"
-            font.pixelSize: 11
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-        }
-
-        Label {
-            text: qsTr("Notificaciones en segundo plano")
-            color: theme.accent
-            font.bold: true
-            Layout.topMargin: 8
-        }
-
-        Label {
-            text: qsTr("Android para el proceso de Templar para ahorrar bateria si no le das permiso explicito -- sin esto pueden dejar de llegarte mensajes con la app minimizada.")
-            color: theme.foreground
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-        }
-
-        TemplarButton {
-            text: dialog.batteryOptimizationIgnored ? qsTr("Permiso concedido") : qsTr("Permitir en segundo plano")
-            enabled: !dialog.batteryOptimizationIgnored
-            Layout.fillWidth: true
-            onClicked: controller.requestIgnoreBatteryOptimizations()
-        }
-
-        Label {
-            text: qsTr("Algunos fabricantes (Xiaomi, Huawei, Oppo, Vivo, OnePlus...) tienen ADEMAS su propio ajuste de bateria, que puede seguir cerrando la app aunque concedas el permiso de arriba. Si notas que dejan de llegarte mensajes, revisa tambien esto:")
-            color: theme.foreground
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-            Layout.topMargin: 4
-        }
-
-        TemplarButton {
-            text: qsTr("Ajustes de bateria del fabricante")
-            Layout.fillWidth: true
-            onClicked: controller.openManufacturerBatterySettings()
-        }
-
-        Label {
-            text: qsTr("Version")
-            color: theme.accent
-            font.bold: true
-            Layout.topMargin: 8
-        }
-
-        // Enlace fijo, siempre visible (haya o no version nueva) -- a la
-        // pagina del release, no a una descarga directa del .apk: Android
-        // (Play Protect/Safe Browsing) se queda colgado al 100% con una
-        // descarga directa iniciada fuera de un navegador real, algo que no
-        // pasa si el usuario pincha "Descargar" desde la propia pagina.
-        Label {
-            text: updateChecker.updateAvailable
-                ? qsTr("Version %1 instalada -- hay una nueva: %2. <a href='%3'>Descargar</a>")
-                      .arg(updateChecker.currentVersion).arg(updateChecker.latestVersion)
-                      .arg(updateChecker.releaseUrl)
-                : qsTr("Version %1 instalada. <a href='%2'>Ver ultima version en GitHub</a>")
-                      .arg(updateChecker.currentVersion).arg(updateChecker.releaseUrl)
-            textFormat: Text.RichText
-            onLinkActivated: (link) => Qt.openUrlExternally(link)
-            wrapMode: Text.WordWrap
-            color: theme.foreground
-            Layout.fillWidth: true
-        }
-
-        // Oculto por completo si no hay hardware/huellas registradas (o en
-        // escritorio, donde biometric.available siempre es false -- ver
-        // BiometricBridge.cpp).
-        RowLayout {
-            visible: biometric.available
-            Layout.fillWidth: true
-            Layout.topMargin: 8
 
             Label {
-                text: qsTr("Inicio de sesión con huella")
+                text: qsTr("Idioma")
+                color: theme.accent
+                font.bold: true
+                Layout.topMargin: 8
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Idioma de la interfaz:"); color: theme.foreground; Layout.fillWidth: true }
+                ComboBox {
+                    id: languageCombo
+                    textRole: "name"
+                    valueRole: "code"
+                    model: [
+                        { code: "es", name: language.displayNameForCode("es") },
+                        { code: "en", name: language.displayNameForCode("en") }
+                    ]
+                    Component.onCompleted: currentIndex = indexOfValue(language.currentCode)
+                }
+            }
+
+            Label {
+                text: qsTr("El cambio de idioma se aplica al reiniciar la app.")
+                color: "#888888"
+                font.pixelSize: 11
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            Label {
+                text: qsTr("Notificaciones en segundo plano")
+                color: theme.accent
+                font.bold: true
+                Layout.topMargin: 8
+            }
+
+            Label {
+                text: qsTr("Android para el proceso de Templar para ahorrar bateria si no le das permiso explicito -- sin esto pueden dejar de llegarte mensajes con la app minimizada.")
+                color: theme.foreground
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            TemplarButton {
+                text: dialog.batteryOptimizationIgnored ? qsTr("Permiso concedido") : qsTr("Permitir en segundo plano")
+                enabled: !dialog.batteryOptimizationIgnored
+                Layout.fillWidth: true
+                onClicked: controller.requestIgnoreBatteryOptimizations()
+            }
+
+            Label {
+                text: qsTr("Algunos fabricantes (Xiaomi, Huawei, Oppo, Vivo, OnePlus...) tienen ADEMAS su propio ajuste de bateria, que puede seguir cerrando la app aunque concedas el permiso de arriba. Si notas que dejan de llegarte mensajes, revisa tambien esto:")
+                color: theme.foreground
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+            }
+
+            TemplarButton {
+                text: qsTr("Ajustes de bateria del fabricante")
+                Layout.fillWidth: true
+                onClicked: controller.openManufacturerBatterySettings()
+            }
+
+            Label {
+                text: qsTr("Version")
+                color: theme.accent
+                font.bold: true
+                Layout.topMargin: 8
+            }
+
+            // Enlace fijo, siempre visible (haya o no version nueva) -- a la
+            // pagina del release, no a una descarga directa del .apk: Android
+            // (Play Protect/Safe Browsing) se queda colgado al 100% con una
+            // descarga directa iniciada fuera de un navegador real, algo que no
+            // pasa si el usuario pincha "Descargar" desde la propia pagina.
+            Label {
+                text: updateChecker.updateAvailable
+                    ? qsTr("Version %1 instalada -- hay una nueva: %2. <a href='%3'>Descargar</a>")
+                          .arg(updateChecker.currentVersion).arg(updateChecker.latestVersion)
+                          .arg(updateChecker.releaseUrl)
+                    : qsTr("Version %1 instalada. <a href='%2'>Ver ultima version en GitHub</a>")
+                          .arg(updateChecker.currentVersion).arg(updateChecker.releaseUrl)
+                textFormat: Text.RichText
+                onLinkActivated: (link) => Qt.openUrlExternally(link)
+                wrapMode: Text.WordWrap
                 color: theme.foreground
                 Layout.fillWidth: true
             }
 
-            Switch {
-                id: biometricSwitch
-                checked: biometric.enabled
-                onClicked: {
-                    // El clic ya cambio "checked" localmente y rompio el
-                    // binding -- se restaura de inmediato para que el
-                    // interruptor siempre refleje biometric.enabled de
-                    // verdad, y la accion de activar/desactivar depende
-                    // del estado anterior, no del visual a medio cambiar.
-                    var wasEnabled = biometric.enabled
-                    checked = Qt.binding(function() {
-                        return biometric.enabled
-                    })
-                    if (wasEnabled) biometric.disable()
-                    else biometricPasswordDialog.open()
+            // Oculto por completo si no hay hardware/huellas registradas (o en
+            // escritorio, donde biometric.available siempre es false -- ver
+            // BiometricBridge.cpp).
+            RowLayout {
+                visible: biometric.available
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+
+                Label {
+                    text: qsTr("Inicio de sesión con huella")
+                    color: theme.foreground
+                    Layout.fillWidth: true
+                }
+
+                Switch {
+                    id: biometricSwitch
+                    checked: biometric.enabled
+                    onClicked: {
+                        // El clic ya cambio "checked" localmente y rompio el
+                        // binding -- se restaura de inmediato para que el
+                        // interruptor siempre refleje biometric.enabled de
+                        // verdad, y la accion de activar/desactivar depende
+                        // del estado anterior, no del visual a medio cambiar.
+                        var wasEnabled = biometric.enabled
+                        checked = Qt.binding(function() {
+                            return biometric.enabled
+                        })
+                        if (wasEnabled) biometric.disable()
+                        else biometricPasswordDialog.open()
+                    }
                 }
             }
-        }
 
-        Label {
-            id: biometricErrorLabel
-            visible: text.length > 0
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
-            color: "#ff6b6b"
+            Label {
+                id: biometricErrorLabel
+                visible: text.length > 0
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                color: "#ff6b6b"
+            }
         }
     }
 }
