@@ -15,12 +15,14 @@ Dialog {
     modal: true
     anchors.centerIn: parent
     width: Math.min(parent ? parent.width - 40 : 360, 360)
-    // Con la seccion de notificaciones anadida, el contenido ya no cabe
-    // entero en pantallas normales -- sin topar la altura aqui, Popup deja
-    // que el ColumnLayout de mas abajo crezca todo lo que haga falta y se
-    // solapa con el pie (Cancelar/Guardar). Topado a un % de la pantalla,
-    // con el ScrollView de mas abajo absorbiendo el resto.
-    height: Math.min(implicitHeight, Screen.height * 0.85)
+    // Fijo, referencia externa (Screen.height) en vez de basarlo en
+    // implicitHeight -- CUALQUIER expresion que mire implicitHeight aqui
+    // (incluso "Math.min(implicitHeight, ...)") crea un bucle si el
+    // ScrollView de mas abajo a su vez mira dialog.availableHeight: el
+    // resultado no es un error visible, es un calculo que se queda a
+    // medias y deja hueco vacio de sobra antes del pie (Cancelar/Guardar).
+    // Con esto siempre hay la misma cantidad de alto disponible, y punto.
+    height: Math.min(Screen.height * 0.85, parent ? parent.height : Screen.height)
 
     property color draftBackground: theme.background
     property color draftForeground: theme.foreground
@@ -195,14 +197,28 @@ Dialog {
         colorPicker.open()
     }
 
-    ScrollView {
-        width: dialog.availableWidth
-        height: dialog.availableHeight
+    // Asignado explicitamente a contentItem (en vez de dejarlo como hijo
+    // suelto mas): sin esto, Popup no lo trata como EL contenido para
+    // calcular availableHeight/sitio del pie, y el ColumnLayout de dentro
+    // se sale por debajo tapando Cancelar/Guardar y hasta la pantalla de
+    // detras -- el recorte (clip) del ScrollView nunca llegaba a aplicarse
+    // donde de verdad hacia falta.
+    contentItem: ScrollView {
+        id: scrollArea
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        // Fijado a mano, IGUAL al ancho visible: sin esto, Flickable
+        // calcula el ancho de contenido a partir del implicitWidth de los
+        // hijos -- que para un Label con wrapMode es su ancho SIN cortar
+        // en una sola linea, no el ya ajustado al layout -- y eso dejaba
+        // arrastrar el contenido hacia los lados (rebotando solo al
+        // soltar, el tipico "no hay nada ahi pero se puede tirar") aunque
+        // en pantalla no hubiera de verdad nada mas ancho que ver.
+        contentWidth: availableWidth
 
         ColumnLayout {
-            width: dialog.availableWidth
+            id: contentColumn
+            width: scrollArea.availableWidth
             spacing: 10
 
             RowLayout {
