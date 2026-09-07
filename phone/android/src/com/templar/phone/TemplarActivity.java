@@ -9,6 +9,19 @@ import android.content.Intent;
 // QtActivity procese el resultado primero (super.onActivityResult) y
 // simplemente reenvia el aviso a CameraHelper despues.
 public class TemplarActivity extends org.qtproject.qt.android.bindings.QtActivity {
+    // Antes de super.onCreate() (que dispara el primer onStart() de esta
+    // misma Activity un poco despues): AppStateTracker cuenta arranques y
+    // paradas desde 0, asi que si se registrase mas tarde -- p.ej. desde
+    // ClientController en C++, que corre en un hilo nativo aparte con
+    // orden incierto respecto al ciclo de vida de la Activity -- se
+    // perderia ese primer onStart y el contador quedaria descuadrado en
+    // -1 el resto de la sesion. Registrado aqui, siempre correcto.
+    @Override
+    public void onCreate(android.os.Bundle savedInstanceState) {
+        AppStateTracker.register(getApplication());
+        super.onCreate(savedInstanceState);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

@@ -245,17 +245,6 @@ QString ClientController::resolveOriginalFilename(const QUrl& fileUrl) {
 }
 
 bool ClientController::shouldNotify(const QString& conversationKey) const {
-  // Desactivado a proposito por ahora: incluso con la comprobacion de mas
-  // abajo (no avisar si la conversacion que llega es la que ya esta
-  // abierta en primer plano), seguian llegando avisos de sistema estando
-  // dentro de ese mismo chat -- probablemente AppStateTracker.isInForeground()
-  // no es fiable en este dispositivo/version de Android. El resto de la
-  // infraestructura (canal, permiso, JNI, ConnectionService) se deja tal
-  // cual para retomarlo mas adelante; solo se apaga la decision de
-  // mostrar el aviso, con este flag.
-  constexpr bool kSystemNotificationsEnabled = false;
-  if (!kSystemNotificationsEnabled) return false;
-
 #ifdef Q_OS_ANDROID
   // QGuiApplication::applicationState() de Qt no cambia de forma fiable en
   // Android con ConnectionService corriendo (el proceso sigue "activo"
@@ -301,6 +290,37 @@ void ClientController::showSystemNotification(const QString& title, const QStrin
 #else
   Q_UNUSED(title);
   Q_UNUSED(text);
+#endif
+}
+
+bool ClientController::isIgnoringBatteryOptimizations() const {
+#ifdef Q_OS_ANDROID
+  QJniObject activity = QNativeInterface::QAndroidApplication::context();
+  if (!activity.isValid()) return true;
+  return QJniObject::callStaticMethod<jboolean>(
+      "com/templar/phone/BatteryOptimizationHelper", "isIgnoring", "(Landroid/content/Context;)Z",
+      activity.object());
+#else
+  return true;
+#endif
+}
+
+void ClientController::requestIgnoreBatteryOptimizations() {
+#ifdef Q_OS_ANDROID
+  QJniObject activity = QNativeInterface::QAndroidApplication::context();
+  if (!activity.isValid()) return;
+  QJniObject::callStaticMethod<void>("com/templar/phone/BatteryOptimizationHelper", "requestIgnore",
+                                     "(Landroid/app/Activity;)V", activity.object());
+#endif
+}
+
+void ClientController::openManufacturerBatterySettings() {
+#ifdef Q_OS_ANDROID
+  QJniObject activity = QNativeInterface::QAndroidApplication::context();
+  if (!activity.isValid()) return;
+  QJniObject::callStaticMethod<void>("com/templar/phone/BatteryOptimizationHelper",
+                                     "openManufacturerSettings", "(Landroid/app/Activity;)V",
+                                     activity.object());
 #endif
 }
 

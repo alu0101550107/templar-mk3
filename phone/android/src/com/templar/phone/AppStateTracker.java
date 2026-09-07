@@ -13,12 +13,20 @@ import android.os.Bundle;
 // iniciadas-pero-no-paradas, si el contador es > 0 hay alguna visible.
 public class AppStateTracker implements Application.ActivityLifecycleCallbacks {
     private static int startedCount = 0;
+    private static boolean registered = false;
 
     public static boolean isInForeground() {
         return startedCount > 0;
     }
 
+    // Idempotente a proposito: TemplarActivity.onCreate() puede correr mas
+    // de una vez por proceso (p.ej. la Activity se recrea en un cambio de
+    // configuracion) -- sin este guardado, cada onCreate() registraria OTRA
+    // instancia mas como listener, y startedCount se incrementaria varias
+    // veces por cada evento real de arranque/parada.
     public static void register(Application app) {
+        if (registered) return;
+        registered = true;
         app.registerActivityLifecycleCallbacks(new AppStateTracker());
     }
 
