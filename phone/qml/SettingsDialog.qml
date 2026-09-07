@@ -22,6 +22,12 @@ Dialog {
     property color draftPeerMessage: theme.peerMessage
     property color draftSystemMessage: theme.systemMessage
 
+    // Se relee cada vez que se abre el dialogo (ver onOpened) -- no es
+    // NOTIFYable desde C++ porque el sistema puede cambiarlo mientras el
+    // usuario esta fuera, en la pantalla de ajustes de Android, sin que la
+    // app se entere en caliente.
+    property bool batteryOptimizationIgnored: false
+
     // Se re-copia del tema real cada vez que se abre -- por si la vez
     // anterior se cancelo a mitad de editar, no debe arrastrar ese borrador
     // descartado a la siguiente apertura.
@@ -32,6 +38,20 @@ Dialog {
         draftOwnMessage = theme.ownMessage
         draftPeerMessage = theme.peerMessage
         draftSystemMessage = theme.systemMessage
+        batteryOptimizationIgnored = controller.isIgnoringBatteryOptimizations()
+    }
+
+    // El usuario concede el permiso desde FUERA de la app (la pantalla de
+    // ajustes de Android) y vuelve -- sin esto, batteryOptimizationIgnored
+    // se quedaria con el valor de cuando se abrio el dialogo hasta que se
+    // cerrase y reabriese a mano.
+    Connections {
+        target: Qt.application
+        function onStateChanged() {
+            if (Qt.application.state === Qt.ApplicationActive && dialog.visible) {
+                dialog.batteryOptimizationIgnored = controller.isIgnoringBatteryOptimizations()
+            }
+        }
     }
 
     onAccepted: {
@@ -292,6 +312,41 @@ Dialog {
             font.pixelSize: 11
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
+        }
+
+        Label {
+            text: qsTr("Notificaciones en segundo plano")
+            color: theme.accent
+            font.bold: true
+            Layout.topMargin: 8
+        }
+
+        Label {
+            text: qsTr("Android para el proceso de Templar para ahorrar bateria si no le das permiso explicito -- sin esto pueden dejar de llegarte mensajes con la app minimizada.")
+            color: theme.foreground
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+
+        TemplarButton {
+            text: dialog.batteryOptimizationIgnored ? qsTr("Permiso concedido") : qsTr("Permitir en segundo plano")
+            enabled: !dialog.batteryOptimizationIgnored
+            Layout.fillWidth: true
+            onClicked: controller.requestIgnoreBatteryOptimizations()
+        }
+
+        Label {
+            text: qsTr("Algunos fabricantes (Xiaomi, Huawei, Oppo, Vivo, OnePlus...) tienen ADEMAS su propio ajuste de bateria, que puede seguir cerrando la app aunque concedas el permiso de arriba. Si notas que dejan de llegarte mensajes, revisa tambien esto:")
+            color: theme.foreground
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+            Layout.topMargin: 4
+        }
+
+        TemplarButton {
+            text: qsTr("Ajustes de bateria del fabricante")
+            Layout.fillWidth: true
+            onClicked: controller.openManufacturerBatterySettings()
         }
 
         Label {

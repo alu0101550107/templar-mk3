@@ -28,6 +28,11 @@ Qt con Android: no tocar sin comprobar contra una version nueva de Qt.
     <!-- Para BiometricHelper.java (desbloqueo con huella): normal, no
          peligroso, no requiere pedirlo en tiempo de ejecucion. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Para poder mostrar el dialogo del sistema que pide eximir a la app
+         de las restricciones de bateria (ver BatteryOptimizationHelper.java):
+         normal, no peligroso, pero Google Play exige declarar esta
+         intencion explicitamente si se usa. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"

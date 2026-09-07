@@ -242,6 +242,25 @@ class ClientController : public QObject {
   // hace nada en plataformas que no sean Android.
   Q_INVOKABLE void capturePhoto(const QString& peerKey);
 
+  // Tres pasos para que el proceso sobreviva de verdad en segundo plano
+  // en la mayoria de moviles (ConnectionService por si solo no basta en
+  // muchos fabricantes -- ver BatteryOptimizationHelper.java). Ninguno
+  // hace nada en plataformas que no sean Android (isIgnoring... devuelve
+  // true, los otros dos no hacen nada).
+  //
+  // isIgnoringBatteryOptimizations(): si YA se concedio la excepcion
+  // oficial de Android -- para no pedirle al usuario algo que ya tiene.
+  Q_INVOKABLE bool isIgnoringBatteryOptimizations() const;
+  // requestIgnoreBatteryOptimizations(): dialogo OFICIAL del sistema
+  // (Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) -- funciona
+  // igual en cualquier fabricante.
+  Q_INVOKABLE void requestIgnoreBatteryOptimizations();
+  // openManufacturerBatterySettings(): la pantalla PROPIA del fabricante
+  // (autoarranque/sin restricciones en Xiaomi, Huawei, Oppo, Vivo,
+  // OnePlus...) cuando existe, o los detalles genericos de la app si no
+  // se reconoce el fabricante o su pantalla no esta donde se esperaba.
+  Q_INVOKABLE void openManufacturerBatterySettings();
+
  signals:
   void connectedChanged();
   void loggedInChanged();
