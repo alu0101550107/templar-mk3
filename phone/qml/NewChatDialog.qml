@@ -47,7 +47,24 @@ Dialog {
 
     onOpened: {
         usernameField.text = ""
-        usernameField.forceActiveFocus()
+        // Pedir el foco EN el propio onOpened, mientras el Popup todavia
+        // esta terminando de activarse como ventana, ha dejado el dialogo
+        // entero sin aparecer en al menos un dispositivo real (Samsung
+        // Galaxy S26 Ultra, reportado: "Nuevo chat" -- que hace esto --
+        // nunca llega a abrirse, mientras que "Nuevo grupo" -- misma
+        // estructura de Dialog pero SIN esta llamada -- si funciona).
+        // Retrasarlo un poco deja que el dialogo termine de activarse antes
+        // de pedir foco + teclado.
+        focusTimer.start()
+    }
+
+    Timer {
+        id: focusTimer
+        interval: 100
+        onTriggered: {
+            usernameField.forceActiveFocus()
+            Qt.inputMethod.show()
+        }
     }
 
     onAccepted: {
