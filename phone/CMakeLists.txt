@@ -34,6 +34,7 @@ qt6_add_executable(templar_phone
   src/ThemeController.cpp
   src/ConversationListModel.cpp
   src/ChatHistoryModel.cpp
+  src/DebugLog.cpp
   ${CMAKE_SOURCE_DIR}/client/src/NetworkManager.cpp
   ${CMAKE_SOURCE_DIR}/client/src/CryptoEngine.cpp
   ${CMAKE_SOURCE_DIR}/client/src/LocalStore.cpp
@@ -47,6 +48,17 @@ target_include_directories(templar_phone PRIVATE ${CMAKE_SOURCE_DIR}/client/src)
 # Version compilada en el binario -- ver UpdateChecker.cpp y el
 # project(... VERSION x.y.z) del CMakeLists.txt raiz.
 target_compile_definitions(templar_phone PRIVATE TEMPLAR_APP_VERSION="${PROJECT_VERSION}")
+
+# Apagado por defecto a proposito -- ver DebugLog.hpp. Se activa solo para
+# generar un APK de diagnostico puntual (-DTEMPLAR_DEBUG_LOGGING=ON) cuando
+# un fallo solo se reproduce en un dispositivo remoto que no se puede
+# depurar en directo; el build que se publica de verdad nunca lo lleva.
+option(TEMPLAR_DEBUG_LOGGING
+  "Vuelca logs detallados a un archivo en el dispositivo, para depurar un fallo remoto" OFF)
+if(TEMPLAR_DEBUG_LOGGING)
+  message(STATUS "TEMPLAR_DEBUG_LOGGING activado -- este build NO es para publicar")
+  target_compile_definitions(templar_phone PRIVATE TEMPLAR_DEBUG_LOGGING)
+endif()
 
 if(ANDROID)
   # Manifest propio (android/AndroidManifest.xml) en vez del que genera Qt

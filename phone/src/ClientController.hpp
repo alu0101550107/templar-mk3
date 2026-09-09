@@ -132,6 +132,12 @@ class ClientController : public QObject {
   // mensaje (X3DH/FetchPrekeyBundle).
   Q_INVOKABLE void startChat(const QString& peerUsername);
 
+  // Puente hacia DebugLog::debugLog() para QML -- no hace nada salvo en un
+  // build compilado con -DTEMPLAR_DEBUG_LOGGING=ON (ver phone/CMakeLists.txt
+  // y phone/src/DebugLog.hpp), asi que se puede llamar sin condicion desde
+  // cualquier .qml sin que afecte al build normal.
+  Q_INVOKABLE void debugLog(const QString& message);
+
   // Crea un grupo con `name` e invita a `inviteUsernames` en cuanto el
   // servidor confirma que existe (ver GroupCreated en onFrameReceived) --
   // mismo orden que MainWindow::onCreateGroupClicked/CreateGroupDialog.

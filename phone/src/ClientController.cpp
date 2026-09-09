@@ -17,6 +17,7 @@
 #include <QtCore/qcoreapplication_platform.h>
 #endif
 
+#include "DebugLog.hpp"
 #include "templar/Wire.hpp"
 #include "templar/crypto/Identity.hpp"
 
@@ -412,11 +413,21 @@ void ClientController::subscribePresence(const QString& peerUsername) {
 }
 
 void ClientController::startChat(const QString& peerUsername) {
+  templar::phone::debugLog(QStringLiteral("startChat: recibido raw=%1 (len=%2)")
+                                .arg(peerUsername)
+                                .arg(peerUsername.length()));
   QString trimmed = peerUsername.trimmed();
-  if (trimmed.isEmpty()) return;
+  if (trimmed.isEmpty()) {
+    templar::phone::debugLog(QStringLiteral("startChat: trimmed vacio, abortando"));
+    return;
+  }
   bool isNew = conversations_.upsert(trimmed, trimmed, /*isGroup=*/false);
+  templar::phone::debugLog(
+      QStringLiteral("startChat: upsert(%1) devolvio isNew=%2").arg(trimmed).arg(isNew));
   if (isNew) subscribePresence(trimmed);
 }
+
+void ClientController::debugLog(const QString& message) { templar::phone::debugLog(message); }
 
 void ClientController::createGroup(const QString& name, const QStringList& inviteUsernames) {
   QString trimmed = name.trimmed();
@@ -1273,6 +1284,12 @@ void ClientController::onNetConnected() {
   setConnected(true);
   setStatusText(tr("Conectado."));
   logSystem(tr("Conectado."));
+#ifdef TEMPLAR_DEBUG_LOGGING
+  // Build de diagnostico puntual -- ver phone/src/DebugLog.hpp. Se anuncia
+  // aqui (no en el arranque) para que aparezca ya dentro del chat
+  // "Sistema", que solo se ve tras iniciar sesion.
+  logSystem(QStringLiteral("[DEBUG] Log detallado en: %1").arg(templar::phone::debugLogFilePath()));
+#endif
   startBackgroundConnectionService();
 }
 

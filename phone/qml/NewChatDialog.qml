@@ -35,17 +35,25 @@ Dialog {
             text: qsTr("Cancelar")
             Layout.fillWidth: true
             Layout.margins: 8
-            onClicked: dialog.reject()
+            onClicked: {
+                controller.debugLog("NewChatDialog: Cancelar pulsado")
+                dialog.reject()
+            }
         }
         TemplarButton {
             text: qsTr("Crear")
             Layout.fillWidth: true
             Layout.margins: 8
-            onClicked: dialog.accept()
+            onClicked: {
+                controller.debugLog("NewChatDialog: Crear pulsado, usernameField.text='" +
+                                     usernameField.text + "' (len=" + usernameField.text.length + ")")
+                dialog.accept()
+            }
         }
     }
 
     onOpened: {
+        controller.debugLog("NewChatDialog: abierto")
         usernameField.text = ""
         // Pedir el foco EN el propio onOpened, mientras el Popup todavia
         // esta terminando de activarse como ventana, ha dejado el dialogo
@@ -69,6 +77,7 @@ Dialog {
 
     onAccepted: {
         var name = usernameField.text.trim()
+        controller.debugLog("NewChatDialog: onAccepted, name='" + name + "' (len=" + name.length + ")")
         if (name.length > 0) controller.startChat(name)
     }
 
@@ -80,6 +89,8 @@ Dialog {
             placeholderText: qsTr("Usuario")
             Layout.fillWidth: true
             onAccepted: dialog.accept()
+            onTextChanged: controller.debugLog(
+                "NewChatDialog: usernameField.text ahora='" + text + "' (len=" + text.length + ")")
         }
     }
 }
