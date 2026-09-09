@@ -33,6 +33,13 @@ Qt con Android: no tocar sin comprobar contra una version nueva de Qt.
          normal, no peligroso, pero Google Play exige declarar esta
          intencion explicitamente si se usa. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Para el PARTIAL_WAKE_LOCK de ConnectionService.java: sin el,
+         confirmado en un dispositivo real que los mensajes que llegan
+         mientras la app esta minimizada (socket TCP sigue vivo, verificado
+         en /proc/net/tcp) no se procesan hasta reabrir la app: Doze le
+         quita CPU al proceso con la pantalla apagada, aunque el foreground
+         service ya lo eximia de que lo maten. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"

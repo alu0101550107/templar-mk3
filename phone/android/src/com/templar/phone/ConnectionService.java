@@ -7,6 +7,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
+import android.os.PowerManager;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -22,6 +23,19 @@ import androidx.core.content.ContextCompat;
 public class ConnectionService extends Service {
     private static final String CHANNEL_ID = "templar_service";
     private static final int NOTIFICATION_ID = 2;
+
+    // Confirmado en un dispositivo real: con SOLO el foreground service, el
+    // socket TCP se queda ESTABLISHED de verdad al minimizar (visto en
+    // /proc/net/tcp), pero un mensaje que llega no se procesa -- ni
+    // aparece en el chat, ni salta la notificacion -- hasta que se reabre
+    // la app; entonces llegan todos de golpe. El foreground service exime
+    // de que MATEN el proceso, pero no de que Doze le quite CPU real
+    // mientras la pantalla esta apagada: los datos se quedan en el buffer
+    // del kernel sin que el hilo de Qt llegue a que lo programen para
+    // leerlos. Un PARTIAL_WAKE_LOCK mantiene la CPU despierta (no la
+    // pantalla) mientras dura la conexion, para que se procesen segun
+    // llegan.
+    private PowerManager.WakeLock wakeLock_;
 
     @Override
     public void onCreate() {
@@ -45,6 +59,17 @@ public class ConnectionService extends Service {
         // del <service> en el manifest -- no hace falta repetirlo aqui, la
         // sobrecarga de 2 argumentos ya lo respeta desde Android 10 en adelante.
         startForeground(NOTIFICATION_ID, notification);
+
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock_ = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK, "Templar::ConnectionService");
+        wakeLock_.acquire();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (wakeLock_ != null && wakeLock_.isHeld()) wakeLock_.release();
+        super.onDestroy();
     }
 
     @Override
