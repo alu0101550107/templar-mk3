@@ -18,6 +18,7 @@
 #include <QListWidget>
 #include <QLocale>
 #include <QMenu>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
@@ -36,6 +37,7 @@
 
 #include "BackgroundWidget.hpp"
 #include "CreateGroupDialog.hpp"
+#include "NewChatDialog.hpp"
 #include "EmojiPicker.hpp"
 #include "Language.hpp"
 #include "SettingsDialog.hpp"
@@ -112,7 +114,6 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
   connect(sendButton_, &QPushButton::clicked, this, &MainWindow::onSendClicked);
   connect(messageEdit_, &QLineEdit::returnPressed, this, &MainWindow::onSendClicked);
   connect(newChatButton_, &QPushButton::clicked, this, &MainWindow::onNewChatClicked);
-  connect(newChatPeerEdit_, &QLineEdit::returnPressed, this, &MainWindow::onNewChatClicked);
   connect(createGroupButton_, &QPushButton::clicked, this, &MainWindow::onCreateGroupClicked);
   connect(kickButton_, &QPushButton::clicked, this, &MainWindow::onKickClicked);
   connect(leaveGroupButton_, &QPushButton::clicked, this, &MainWindow::onLeaveGroupClicked);
@@ -333,8 +334,14 @@ QWidget* MainWindow::buildLoginPage() {
 
 QWidget* MainWindow::buildChatPage() {
   connectedAsLabel_ = new QLabel();
-  disconnectButton_ = new QPushButton(tr("Desconectar"));
+  // U+23FB (simbolo de apagado) de la fuente de iconos empaquetada, igual que
+  // el boton de cerrar sesion del movil. El font-family va en la hoja de
+  // estilo del propio boton porque la global (QWidget { font-family }) pisa
+  // cualquier setFont().
+  disconnectButton_ = new QPushButton(QString::fromUtf8("\xE2\x8F\xBB"));
   disconnectButton_->setObjectName("disconnectButton");
+  disconnectButton_->setStyleSheet("QPushButton { font-family: \"Templar Icons\"; font-size: 16px; padding: 0px 12px; }");
+  disconnectButton_->setToolTip(tr("Desconectar"));
   searchToggleButton_ = new QPushButton("🔎");
   searchToggleButton_->setObjectName("searchToggleButton");
   searchToggleButton_->setToolTip(tr("Buscar en esta conversacion"));
@@ -346,15 +353,8 @@ QWidget* MainWindow::buildChatPage() {
 
   conversationList_ = new QListWidget();
   conversationList_->setObjectName("conversationList");
-  newChatPeerEdit_ = new QLineEdit();
-  newChatPeerEdit_->setObjectName("newChatPeerEdit");
-  newChatPeerEdit_->setPlaceholderText(tr("usuario..."));
   newChatButton_ = new QPushButton(tr("+ Nuevo chat"));
   newChatButton_->setObjectName("newChatButton");
-
-  auto* newChatRow = new QHBoxLayout();
-  newChatRow->addWidget(newChatPeerEdit_);
-  newChatRow->addWidget(newChatButton_);
 
   createGroupButton_ = new QPushButton(tr("+ Nuevo grupo"));
   createGroupButton_->setObjectName("createGroupButton");
@@ -384,7 +384,7 @@ QWidget* MainWindow::buildChatPage() {
   auto* sidebarLayout = new QVBoxLayout();
   sidebarLayout->addWidget(new QLabel(tr("Conversaciones")));
   sidebarLayout->addWidget(conversationList_, /*stretch=*/1);
-  sidebarLayout->addLayout(newChatRow);
+  sidebarLayout->addWidget(newChatButton_);
   sidebarLayout->addWidget(createGroupButton_);
   sidebarLayout->addWidget(inviteLabel_);
   sidebarLayout->addWidget(inviteList_);
@@ -474,12 +474,10 @@ QWidget* MainWindow::buildChatPage() {
   sendButton_->setObjectName("sendButton");
   sendButton_->setFont(QFont("Templar Icons"));
   sendButton_->setToolTip(tr("Enviar"));
-  // Mismo alto que emojiButton_/attachButton_ (la fuente de icono tiene
-  // metricas de linea distintas a la del resto, por eso hace falta fijarlo
-  // a mano en vez de dejarlo en automatico) pero mas ancho -- es el boton
-  // que se pulsa mas a menudo al escribir, conviene que el area clicable
-  // sea comoda.
-  sendButton_->setFixedHeight(emojiButton_->sizeHint().height());
+  // Mas ancho que emojiButton_/attachButton_ -- es el boton que se pulsa mas
+  // a menudo al escribir, conviene que el area clicable sea comoda. El alto
+  // lo iguala equalizeRowHeights() (la fuente de icono tiene metricas de
+  // linea distintas).
   sendButton_->setMinimumWidth(64);
 
   auto* sendRow = new QHBoxLayout();
@@ -616,8 +614,12 @@ QString MainWindow::dateDividerHtml(qint64 epochSecs) const {
   // de fijar uno solo).
   QLocale locale = languageLocale(currentLanguage());
   QString text = locale.toString(date, locale.dateFormat(QLocale::LongFormat));
-  return "<div style='text-align:center; margin:6px 0; color:" + theme_.systemMessage.name() +
-        ";'><i>" + text.toHtmlEscaped() + "</i></div>";
+  // Tabla de una celda en vez de <div style='text-align:center'>: QTextEdit::append()
+  // ignora la alineacion del primer bloque del HTML que se le pasa, asi que un
+  // div/p nunca se centra; la alineacion de una celda de tabla si se respeta.
+  return "<table width='100%' style='margin:6px 0;' cellspacing='0' cellpadding='0'><tr>"
+        "<td align='center' style='color:" + theme_.systemMessage.name() + ";'><i>" +
+        text.toHtmlEscaped() + "</i></td></tr></table>";
 }
 
 void MainWindow::appendLiveLine(const std::string& key, const ChatLine& line) {
@@ -646,7 +648,28 @@ void MainWindow::applyTheme() {
         QString("QTextEdit { background: transparent; color: %1; }").arg(theme_.foreground.name()));
   }
 
+  equalizeRowHeights();
   renderActiveConversation();
+}
+
+void MainWindow::equalizeRowHeights() {
+  // Cada fila de widgets contiguos (campo de texto + botones, o botones
+  // sueltos) se iguala al mas alto de la fila: las fuentes de emoji/icono y
+  // el padding distinto de QLineEdit y QPushButton los dejaban desparejos.
+  auto equalize = [](std::initializer_list<QWidget*> row) {
+    int height = 0;
+    for (QWidget* w : row) {
+      if (!w) return;
+      w->setMinimumHeight(0);
+      w->setMaximumHeight(QWIDGETSIZE_MAX);
+      w->ensurePolished();
+      height = std::max(height, w->sizeHint().height());
+    }
+    for (QWidget* w : row) w->setFixedHeight(height);
+  };
+  equalize({searchToggleButton_, disconnectButton_});
+  equalize({messageEdit_, emojiButton_, attachButton_, sendButton_});
+  equalize({searchEdit_, searchPrevButton_, searchNextButton_, searchCloseButton_});
 }
 
 void MainWindow::onSettingsClicked() {
@@ -1075,12 +1098,26 @@ void MainWindow::onConversationSelected(QListWidgetItem* current, QListWidgetIte
 }
 
 void MainWindow::onNewChatClicked() {
-  std::string peer = newChatPeerEdit_->text().toStdString();
+  if (!loggedIn_) return;
+
+  NewChatDialog dialog(this);
+  if (dialog.exec() != QDialog::Accepted) return;
+
+  std::string peer = dialog.resultUsername().toStdString();
   if (peer.empty() || peer == kSystemKey) return;
 
-  ensureConversationListed(peer, QString::fromStdString(peer));
-  selectConversation(peer);
-  newChatPeerEdit_->clear();
+  // Si ya esta en la barra lateral no hay nada que comprobar.
+  if (listedKeys_.count(peer)) {
+    selectConversation(peer);
+    return;
+  }
+
+  // No se lista hasta que el servidor confirme que el usuario existe (ver el
+  // case LookupUserResult de onFrameReceived).
+  pendingChatLookups_.insert(peer);
+  Writer w;
+  w.str(peer);
+  net_.sendFrame(MsgType::LookupUser, w.take());
 }
 
 void MainWindow::sendEncryptedToServer(const std::string& peer, const Bytes& ciphertext) {
@@ -1738,7 +1775,6 @@ void MainWindow::setLoginError(const QString& message) {
 }
 
 void MainWindow::setLoggedInUiState(bool loggedIn) {
-  newChatPeerEdit_->setEnabled(loggedIn);
   newChatButton_->setEnabled(loggedIn);
   createGroupButton_->setEnabled(loggedIn);
   bool isRealChat = (activeConversation_ != kSystemKey);
@@ -1871,6 +1907,7 @@ void MainWindow::onNetDisconnected() {
   logSystem(tr("Conexion cerrada."));
   cancelActiveTransfers();
   pendingBlobDownloads_.clear();
+  pendingChatLookups_.clear();
   localStore_.lock();
   stack_->setCurrentWidget(loginPage_);
 }
@@ -2400,6 +2437,20 @@ void MainWindow::onFrameReceived(MsgType type, Bytes payload) {
           it = groups_.erase(it);
         }
         updateGroupHeader();
+        break;
+      }
+      case MsgType::LookupUserResult: {
+        Reader r(payload);
+        std::string username = r.str();
+        bool exists = r.u8() != 0;
+        if (pendingChatLookups_.erase(username) == 0) break;
+        if (exists) {
+          ensureConversationListed(username, QString::fromStdString(username));
+          selectConversation(username);
+        } else {
+          QMessageBox::warning(this, tr("Nuevo chat"),
+                               tr("El usuario '%1' no existe.").arg(QString::fromStdString(username)));
+        }
         break;
       }
       case MsgType::GroupErr: {

@@ -418,6 +418,11 @@
 <context>
     <name>templar::phone::ClientController</name>
     <message>
+        <location filename="../src/ClientController.cpp" line="1" />
+        <source>El usuario &apos;%1&apos; no existe.</source>
+        <translation>User &apos;%1&apos; does not exist.</translation>
+    </message>
+    <message>
         <location filename="../src/ClientController.cpp" line="81" />
         <location filename="../src/ClientController.cpp" line="1283" />
         <source>Sistema</source>

@@ -4,6 +4,7 @@
 
 #include <QFile>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
@@ -126,10 +127,9 @@ class ClientController : public QObject {
   Q_INVOKABLE QString rememberedUsername() const;
 
   // Anade un chat 1-a-1 a la lista (si no estaba ya) y se suscribe a su
-  // presencia. No valida contra el servidor que el usuario exista -- mismo
-  // criterio que MainWindow::onNewChatClicked en el escritorio, la
-  // comprobacion real llega mas adelante al intentar mandar el primer
-  // mensaje (X3DH/FetchPrekeyBundle).
+  // presencia -- pero solo tras preguntar al servidor si el usuario existe
+  // (LookupUser); si no existe, no se anade y se muestra un error (ver el
+  // case LookupUserResult de onFrameReceived).
   Q_INVOKABLE void startChat(const QString& peerUsername);
 
   // Puente hacia DebugLog::debugLog() para QML -- no hace nada salvo en un
@@ -583,6 +583,10 @@ class ClientController : public QObject {
   // que llega GroupCreated con el id real del grupo ya creado, momento en
   // el que se manda un InviteToGroup por cada uno.
   QStringList pendingGroupInvitees_;
+
+  // Usuarios por los que se ha preguntado con LookupUser y aun no ha llegado
+  // la respuesta (ver startChat).
+  QSet<QString> pendingChatLookups_;
 
   // Mensajes sin leer por conversacion -- equivalente movil de
   // unreadCounts_ en MainWindow.hpp. Se mantiene aparte de conversations_

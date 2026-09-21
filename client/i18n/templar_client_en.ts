@@ -19,6 +19,19 @@
     </message>
 </context>
 <context>
+    <name>templar::client::NewChatDialog</name>
+    <message>
+        <location filename="../src/NewChatDialog.cpp" line="12" />
+        <source>Nuevo chat</source>
+        <translation>New chat</translation>
+    </message>
+    <message>
+        <location filename="../src/NewChatDialog.cpp" line="16" />
+        <source>Usuario:</source>
+        <translation>User:</translation>
+    </message>
+</context>
+<context>
     <name>templar::client::EmojiPicker</name>
     <message>
         <location filename="../src/EmojiPicker.cpp" line="82" />
@@ -63,6 +76,16 @@
 </context>
 <context>
     <name>templar::client::MainWindow</name>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="1" />
+        <source>Nuevo chat</source>
+        <translation>New chat</translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow.cpp" line="1" />
+        <source>El usuario &apos;%1&apos; no existe.</source>
+        <translation>User &apos;%1&apos; does not exist.</translation>
+    </message>
     <message>
         <location filename="../src/MainWindow.cpp" line="78" />
         <location filename="../src/MainWindow.cpp" line="1858" />

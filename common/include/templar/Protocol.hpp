@@ -147,6 +147,15 @@ enum class MsgType : uint8_t {
   // Servidor -> cliente: str blobId, str reason (no existe, caduco, o
   // nunca se completo la subida).
   BlobNotFound = 41,
+
+  // --- Comprobar si un usuario existe ---
+  // Cliente -> servidor: str username. Solo comprueba existencia, sin las
+  // consecuencias de FetchPrekeyBundle (que consume una one-time prekey del
+  // usuario consultado cada vez que se llama).
+  LookupUser = 42,
+  // Servidor -> cliente: str username (el mismo que se pregunto, para que el
+  // cliente sepa a que consulta responde), u8 exists (1/0).
+  LookupUserResult = 43,
 };
 
 // Cota de seguridad: ningún mensaje legítimo del protocolo debería acercarse

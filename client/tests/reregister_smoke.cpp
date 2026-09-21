@@ -23,6 +23,7 @@
 #include <stdexcept>
 
 #include "MainWindow.hpp"
+#include "NewChatHelper.hpp"
 #include "templar/crypto/Identity.hpp"
 
 using namespace templar::client;
@@ -109,8 +110,7 @@ int main(int argc, char* argv[]) {
     connectRegisterLogin(aliceNew, newPort, "rereg_alice", "password123");
     connectRegisterLogin(carol, newPort, "rereg_carol", "password123");
 
-    find<QLineEdit>(&carol, "newChatPeerEdit")->setText("rereg_alice");
-    find<QPushButton>(&carol, "newChatButton")->click();
+    startChatViaDialog(&carol, "rereg_alice");
     QTest::qWait(200);
 
     find<QLineEdit>(&carol, "messageEdit")->setText("hola alice, soy carol (servidor nuevo)");

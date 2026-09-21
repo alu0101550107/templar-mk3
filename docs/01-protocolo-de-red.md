@@ -108,6 +108,9 @@ comentarios en cada uno explicando su payload):
 - **Cuenta**: `Register`/`RegisterOk`/`RegisterErr`, `Login`/`LoginOk`/`LoginErr`.
 - **Arranque de conversacion (X3DH)**: `FetchPrekeyBundle` -> `PrekeyBundle`/`PrekeyBundleErr`,
   `PublishOtpk` (subir prekeys de un solo uso -- ver [02-criptografia.md](02-criptografia.md)).
+- **Comprobar que un usuario existe**: `LookupUser` -> `LookupUserResult` (se usa
+  al crear un chat, antes de listarlo; a diferencia de `FetchPrekeyBundle` no
+  consume ninguna one-time prekey).
 - **Mensajeria 1 a 1**: `SendMsg` (cliente -> servidor) / `DeliverMsg`
   (servidor -> cliente) / `Ack` (confirmar que se proceso, para poder
   borrarlo de la cola de pendientes).

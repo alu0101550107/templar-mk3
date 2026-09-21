@@ -28,6 +28,7 @@ add_executable(templar_client
   src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
+  src/NewChatDialog.cpp
   resources/templar.qrc
 )
 # Version compilada en el binario -- ver UpdateChecker.cpp y el
@@ -138,6 +139,7 @@ add_executable(templar_gui_smoke
   src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
+  src/NewChatDialog.cpp
   resources/templar.qrc
 )
 target_include_directories(templar_gui_smoke PRIVATE src)
@@ -167,6 +169,7 @@ add_executable(templar_reregister_smoke
   src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
+  src/NewChatDialog.cpp
   resources/templar.qrc
 )
 target_include_directories(templar_reregister_smoke PRIVATE src)
@@ -196,6 +199,7 @@ add_executable(templar_group_smoke
   src/UpdateChecker.cpp
   src/SettingsDialog.cpp
   src/CreateGroupDialog.cpp
+  src/NewChatDialog.cpp
   resources/templar.qrc
 )
 target_include_directories(templar_group_smoke PRIVATE src)

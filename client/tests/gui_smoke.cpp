@@ -14,16 +14,19 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QStandardPaths>
 #include <QTest>
+#include <QTimer>
 #include <QTextEdit>
 
 #include <iostream>
 #include <stdexcept>
 
 #include "MainWindow.hpp"
+#include "NewChatHelper.hpp"
 #include "templar/crypto/Identity.hpp"
 
 using namespace templar::client;
@@ -110,9 +113,28 @@ int main(int argc, char* argv[]) {
 
     check(find<QTextEdit>(&alice, "chatView") != nullptr, "alice debe tener la pantalla de chat");
 
+    // --- Un usuario que no existe no debe crear chat: aviso, no entrada ---
+    // El aviso es un QMessageBox modal -- se cierra desde un QTimer, y se
+    // anota si llego a aparecer.
+    bool warningShown = false;
+    QTimer::singleShot(600, [&warningShown] {
+      for (QWidget* w : QApplication::topLevelWidgets()) {
+        if (auto* box = qobject_cast<QMessageBox*>(w)) {
+          warningShown = box->text().contains("no_such_user_xyz");
+          box->accept();
+        }
+      }
+    });
+    startChatViaDialog(&alice, "no_such_user_xyz");
+    QTest::qWait(1000);
+    check(warningShown, "debe salir un aviso de que el usuario no existe");
+    check(findConversationItem(find<QListWidget>(&alice, "conversationList"), "no_such_user_xyz") ==
+              nullptr,
+         "un usuario inexistente no debe anadirse a la barra lateral");
+    std::cout << "[OK] Usuario inexistente: aviso y sin chat creado.\n";
+
     // --- Alice abre chat nuevo con bob y le escribe ---
-    find<QLineEdit>(&alice, "newChatPeerEdit")->setText("gui_bob");
-    find<QPushButton>(&alice, "newChatButton")->click();
+    startChatViaDialog(&alice, "gui_bob");
     QTest::qWait(200);
 
     find<QLineEdit>(&alice, "messageEdit")->setText("hola bob desde la gui real");
@@ -225,6 +247,24 @@ int main(int argc, char* argv[]) {
     check(!aliceProgress->isVisible(),
          "la barra de progreso de alice debe ocultarse al terminar el envio");
 
+    // La descarga ya no es automatica: bob ve un enlace "Descargar" en el
+    // chat y tiene que pulsarlo. Se busca el enlace en el viewport de su
+    // chat y se le hace un clic real de raton, el mismo camino que un
+    // usuario (MainWindow::eventFilter -> startBlobDownload).
+    QWidget* bobViewport = bobChatView->viewport();
+    QPoint linkPos;
+    for (int y = 0; y < bobViewport->height() && linkPos.isNull(); y += 4) {
+      for (int x = 0; x < bobViewport->width(); x += 8) {
+        if (bobChatView->anchorAt(QPoint(x, y)).startsWith("templar-download:")) {
+          linkPos = QPoint(x, y);
+          break;
+        }
+      }
+    }
+    check(!linkPos.isNull(), "bob debe ver un enlace 'Descargar' en su chat");
+    QTest::mouseClick(bobViewport, Qt::LeftButton, Qt::NoModifier, linkPos);
+    QTest::qWait(8000);
+
     QString downloadsDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     QString expectedDownloadPath = downloadsDir + "/" + sourceName;
     check(QFile::exists(expectedDownloadPath),
@@ -258,7 +298,7 @@ int main(int argc, char* argv[]) {
     auto* searchCount = find<QLabel>(&alice, "searchCountLabel");
     searchEdit->setText("hola");
     QTest::qWait(100);
-    check(searchCount->text() == "2 resultados",
+    check(searchCount->text() == "2 resultado(s)",
          "debe contar las 2 lineas que contienen 'hola' en el chat con bob");
 
     auto* aliceChatViewForSearch = find<QTextEdit>(&alice, "chatView");

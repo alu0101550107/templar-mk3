@@ -53,6 +53,9 @@ void Router::handleFrame(const std::shared_ptr<Session>& session, MsgType type,
       case MsgType::Login:
         handleLogin(session, payload);
         break;
+      case MsgType::LookupUser:
+        handleLookupUser(session, payload);
+        break;
       case MsgType::FetchPrekeyBundle:
         handleFetchPrekeyBundle(session, payload);
         break;
@@ -277,6 +280,18 @@ void Router::handleLogin(const std::shared_ptr<Session>& session, const Bytes& p
   flushGroupInvites(session);
   flushMailbox(session);
   notifyPresenceSubscribers(username, true);
+}
+
+void Router::handleLookupUser(const std::shared_ptr<Session>& session, const Bytes& payload) {
+  if (!session->isLoggedIn()) return;
+
+  Reader r(payload);
+  std::string target = r.str();
+
+  Writer w;
+  w.str(target);
+  w.u8(db_.findUser(target) ? 1 : 0);
+  session->deliver(MsgType::LookupUserResult, w.take());
 }
 
 void Router::handleFetchPrekeyBundle(const std::shared_ptr<Session>& session, const Bytes& payload) {

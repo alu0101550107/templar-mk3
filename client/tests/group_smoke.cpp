@@ -24,6 +24,7 @@
 #include <stdexcept>
 
 #include "MainWindow.hpp"
+#include "NewChatHelper.hpp"
 #include "templar/crypto/Identity.hpp"
 
 using namespace templar::client;
@@ -124,8 +125,7 @@ int main(int argc, char* argv[]) {
 
     // --- Alice y bob se conocen primero por chat 1-a-1 (para que bob
     // aparezca como contacto invitable en el dialogo de crear grupo) ---
-    find<QLineEdit>(&alice, "newChatPeerEdit")->setText("grp_bob");
-    find<QPushButton>(&alice, "newChatButton")->click();
+    startChatViaDialog(&alice, "grp_bob");
     QTest::qWait(200);
     find<QLineEdit>(&alice, "messageEdit")->setText("hola antes de crear el grupo");
     find<QPushButton>(&alice, "sendButton")->click();

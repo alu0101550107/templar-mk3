@@ -421,10 +421,16 @@ void ClientController::startChat(const QString& peerUsername) {
     templar::phone::debugLog(QStringLiteral("startChat: trimmed vacio, abortando"));
     return;
   }
-  bool isNew = conversations_.upsert(trimmed, trimmed, /*isGroup=*/false);
-  templar::phone::debugLog(
-      QStringLiteral("startChat: upsert(%1) devolvio isNew=%2").arg(trimmed).arg(isNew));
-  if (isNew) subscribePresence(trimmed);
+  setErrorText("");
+  if (conversations_.contains(trimmed)) {
+    templar::phone::debugLog(QStringLiteral("startChat: %1 ya estaba en la lista").arg(trimmed));
+    return;
+  }
+  templar::phone::debugLog(QStringLiteral("startChat: preguntando al servidor por %1").arg(trimmed));
+  pendingChatLookups_.insert(trimmed);
+  Writer w;
+  w.str(trimmed.toStdString());
+  net_.sendFrame(MsgType::LookupUser, w.take());
 }
 
 void ClientController::debugLog(const QString& message) { templar::phone::debugLog(message); }
@@ -1307,6 +1313,7 @@ void ClientController::onNetDisconnected() {
   // quedaban pegados en pantalla al iniciar sesion despues con una cuenta
   // distinta en la misma sesion de la app (bug real reportado: se veian
   // chats -- con su contenido -- que no pertenecian a la cuenta nueva).
+  pendingChatLookups_.clear();
   conversations_.clear();
   conversationHistory_.clear();
   // "Sistema" se vuelve a anadir de inmediato, vacia -- ver el comentario
@@ -1501,6 +1508,23 @@ void ClientController::onFrameReceived(MsgType type, Bytes payload) {
           net_.sendFrame(MsgType::InviteToGroup, iw.take());
         }
         pendingGroupInvitees_.clear();
+        break;
+      }
+      case MsgType::LookupUserResult: {
+        Reader r(payload);
+        QString username = QString::fromStdString(r.str());
+        bool exists = r.u8() != 0;
+        if (!pendingChatLookups_.remove(username)) break;
+        templar::phone::debugLog(
+            QStringLiteral("LookupUserResult: %1 exists=%2").arg(username).arg(exists));
+        if (exists) {
+          bool isNew = conversations_.upsert(username, username, /*isGroup=*/false);
+          templar::phone::debugLog(
+              QStringLiteral("startChat: upsert(%1) devolvio isNew=%2").arg(username).arg(isNew));
+          if (isNew) subscribePresence(username);
+        } else {
+          setErrorText(tr("El usuario '%1' no existe.").arg(username));
+        }
         break;
       }
       case MsgType::GroupErr: {

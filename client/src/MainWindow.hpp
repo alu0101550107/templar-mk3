@@ -298,6 +298,7 @@ class MainWindow : public QWidget {
   // no duplicarlo entre logChat/logSystem.
   void appendLiveLine(const std::string& key, const ChatLine& line);
   void applyTheme();
+  void equalizeRowHeights();
 
   void setupTrayIcon();
   // true si la ventana no es la que tiene el foco ahora mismo (oculta en la
@@ -456,6 +457,10 @@ class MainWindow : public QWidget {
   std::string activeConversation_ = kSystemKey;
   std::unordered_map<std::string, std::vector<ChatLine>> conversations_;
   std::unordered_set<std::string> listedKeys_;
+  // Usuarios por los que se ha preguntado al servidor (LookupUser) al crear un
+  // chat y cuya respuesta esta pendiente -- el chat no se lista hasta que
+  // llega LookupUserResult confirmando que existen.
+  std::unordered_set<std::string> pendingChatLookups_;
   std::unordered_map<std::string, int> unreadCounts_;
 
   // --- Grupos ---
@@ -503,7 +508,6 @@ class MainWindow : public QWidget {
   QPushButton* searchToggleButton_;
 
   QListWidget* conversationList_;
-  QLineEdit* newChatPeerEdit_;
   QPushButton* newChatButton_;
   QPushButton* createGroupButton_;
 

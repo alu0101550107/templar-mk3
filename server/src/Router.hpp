@@ -41,6 +41,8 @@ class Router {
  private:
   void handleRegister(const std::shared_ptr<Session>& session, const templar::proto::Bytes& payload);
   void handleLogin(const std::shared_ptr<Session>& session, const templar::proto::Bytes& payload);
+  void handleLookupUser(const std::shared_ptr<Session>& session,
+                        const templar::proto::Bytes& payload);
   void handleFetchPrekeyBundle(const std::shared_ptr<Session>& session,
                                const templar::proto::Bytes& payload);
   void handleSendMsg(const std::shared_ptr<Session>& session, const templar::proto::Bytes& payload);
