@@ -154,7 +154,13 @@ cmake -S "$SCRIPT_DIR" -B "$BUILD_DIR" \
 
 # --- Compilar + generar el APK ---
 echo "==> Compilando templar_phone y generando el APK (puede tardar varios minutos)..."
-JAVA_HOME="$JAVA17_HOME" cmake --build "$BUILD_DIR" --target templar_phone_make_apk -j"$(nproc)"
+# ANDROID_USER_HOME fijado a mano: sin esto, si XDG_CONFIG_HOME esta definido
+# (lo esta en algunas sesiones), Gradle busca/crea el debug.keystore en
+# $XDG_CONFIG_HOME/.android en vez de ~/.android, firma el APK con OTRA clave y
+# Android rechaza la actualizacion sobre la app ya instalada ("conflicto con un
+# paquete"). Ya paso de verdad con la v1.0.6.
+JAVA_HOME="$JAVA17_HOME" ANDROID_USER_HOME="$HOME/.android" \
+  cmake --build "$BUILD_DIR" --target templar_phone_make_apk -j"$(nproc)"
 
 APK_PATH="$BUILD_DIR/phone/android-build/build/outputs/apk/debug/android-build-debug.apk"
 if [ ! -f "$APK_PATH" ]; then
