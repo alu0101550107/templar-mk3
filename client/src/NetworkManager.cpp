@@ -54,7 +54,18 @@ void NetworkManager::onEncrypted() {
     return;
   }
 
-  if (!checkAndRememberCertificate(pendingHost_, pendingPort_, cert)) {
+  // TOFU solo hace falta para un certificado autofirmado: ahi no hay
+  // ninguna CA que lo avale, asi que es la unica forma de detectar que
+  // alguien en medio lo sustituyo por el suyo. Un certificado firmado por
+  // una CA reconocida (p.ej. Let's Encrypt) ya paso la validacion de
+  // cadena de Qt antes de llegar aqui (ver el comentario de onSslErrors
+  // arriba) -- fijar ademas su huella exacta no anade proteccion real y sí
+  // rompe la conexion de TODOS los clientes en cuanto certbot renueva el
+  // certificado: por defecto genera un par de claves nuevo en cada
+  // renovacion (cada ~60 dias), asi que la huella cambia aunque el
+  // certificado siga siendo perfectamente valido -- un certificado
+  // renovado de verdad se veia identico a un ataque de intermediario.
+  if (cert.isSelfSigned() && !checkAndRememberCertificate(pendingHost_, pendingPort_, cert)) {
     emit connectionError(
         QString("¡ALERTA! El certificado TLS de %1:%2 ha cambiado desde la ultima vez que te "
                "conectaste ahi. Podria ser un ataque de intermediario, o simplemente que "

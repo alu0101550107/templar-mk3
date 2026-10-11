@@ -280,7 +280,15 @@ certificado es de verdad autofirmado (el caso de arriba); si viene de una
 CA reconocida pero tiene algun problema real (caducado, dominio que no
 coincide, revocado...) ya no se ignora, se corta la conexion como haria
 cualquier cliente HTTPS normal. El TOFU de `checkAndRememberCertificate`
-sigue corriendo en ambos casos, como capa extra.
+tambien distingue ambos casos (`NetworkManager::onEncrypted`): solo corre
+para un certificado autofirmado. Para uno de una CA reconocida no aporta
+proteccion real (la cadena de confianza ya la valida Qt) y ademas rompia
+la conexion de todos los clientes en cada renovacion de Let's Encrypt --
+`certbot` genera un par de claves nuevo por renovacion por defecto, asi
+que la huella cambia cada ~60 dias aunque el certificado siga siendo
+valido; un bug real detectado en produccion (issue: la app dejaba de
+conectar tras cada renovacion automatica, con un aviso de "el certificado
+ha cambiado" identico al de un ataque de intermediario de verdad).
 
 El `sslContext` en si (`main.cpp`) tambien fija una version minima --
 `no_sslv2`/`no_sslv3`/`no_tlsv1`/`no_tlsv1_1` via `set_options()`, dejando
